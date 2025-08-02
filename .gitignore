@@ -70,3 +70,6 @@ venv.bak/
 
 # SQLite databases
 *.sqlite3
+
+.DS_Store
+Thumbs.db
