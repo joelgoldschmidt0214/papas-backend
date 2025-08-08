@@ -22,11 +22,11 @@ jobs:
 
       # 3. ACRにログイン
       - name: Log in to Azure Container Registry
-        uses: docker/login-action@v3
+        uses: azure/docker-login@v2
         with:
-          registry: ${{ secrets.ACR_NAME }}.azurecr.io
-          username: ${{ secrets.AZURE_CREDENTIALS.clientId }}
-          password: ${{ secrets.AZURE_CREDENTIALS.clientSecret }}
+          login-server: ${{ secrets.ACR_NAME }}.azurecr.io
+          username: ${{ secrets.AZURE_CLIENT_ID }}
+          password: ${{ secrets.AZURE_CLIENT_SECRET }}
 
       # 4. Dockerイメージをビルドしてプッシュ
       - name: Build and push Docker image
@@ -38,6 +38,6 @@ jobs:
       - name: Deploy to Azure Container Apps
         uses: azure/container-apps-deploy-action@v1
         with:
-          appName: ${{ secrets.ACA_APP_NAME }}
+          containerAppName: ${{ secrets.ACA_APP_NAME }}
           resourceGroup: ${{ secrets.RESOURCE_GROUP_NAME }}
           imageToDeploy: ${{ secrets.ACR_NAME }}.azurecr.io/${{ secrets.ACA_APP_NAME }}:${{ github.sha }}
