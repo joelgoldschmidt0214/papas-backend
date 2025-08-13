@@ -31,18 +31,6 @@ def read_root():
     return {"Hello": "World from FastAPI"}
 
 
-# @app.post("/posts")
-# def create_post(id: int):
-#     values = customer.dict()
-#     tmp = crud.myinsert(mymodels.Customers, values)
-#     result = crud.myselect(mymodels.Customers, values.get("customer_id"))
-
-#     if result:
-#         result_obj = json.loads(result)
-#         return result_obj if result_obj else None
-#     return None
-
-
 # --- DB セッション依存関数 ---
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
