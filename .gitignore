@@ -73,3 +73,6 @@ venv.bak/
 
 .DS_Store
 Thumbs.db
+
+# SSL証明書
+*.pem

@@ -2,3 +2,9 @@ fastapi
 uvicorn[standard]
 sqlalchemy
 mysql-connector-python
+
+#けいじゅ追記（2025/08/13）
+pymysql
+python-dotenv
+passlib
+bcrypt
