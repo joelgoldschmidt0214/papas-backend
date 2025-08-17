@@ -2,6 +2,7 @@ fastapi
 uvicorn[standard]
 sqlalchemy
 mysql-connector-python
+pip>=25.2
 
 #けいじゅ追記（2025/08/13）
 pymysql
