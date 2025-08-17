@@ -5,11 +5,12 @@ from typing import List, Optional
 from datetime import datetime
 
 # import requests
-import json
+# import json
 
 # from db_control import crud, mymodels
 from db_control import crud, mymodels_MySQL as mymodels  # 変更
-from sqlalchemy import text
+
+# from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker, Session
 from db_control.connect_MySQL import engine
 
