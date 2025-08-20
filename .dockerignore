@@ -1,0 +1,20 @@
+# Git Submoduleで管理しているドキュメントフォルダ
+docs/
+
+# Docker関連
+Dockerfile
+Dockerfile.dev
+.dockerignore
+
+# Git関連
+.git
+.gitattributes
+.gitignore
+.gitmodules
+
+# 開発環境設定
+.devcontainer/
+.vscode/
+
+# Pythonキャッシュ
+__pycache__/

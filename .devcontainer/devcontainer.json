@@ -73,12 +73,12 @@
       "source": "${localWorkspaceFolder}",
       "target": "${containerWorkspaceFolder}",
       "type": "bind"
-    },
-    {
-      "source": "${localWorkspaceFolder}/../papas-docs",
-      "target": "${containerWorkspaceFolder}/papas-docs",
-      "type": "bind"
     }
+    // {
+    //   "source": "${localWorkspaceFolder}/../papas-docs",
+    //   "target": "${containerWorkspaceFolder}/papas-docs",
+    //   "type": "bind"
+    // }
   ],
   // Gitのソース管理でdocsを表示させない設定
   "workspaceFolder": "/workspace"
