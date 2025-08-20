@@ -2,7 +2,7 @@
 
 ## Overview
 
-The TOMOS backend API is designed as a high-performance, cache-optimized MVP system that provides essential social networking functionality for local community engagement. The system prioritizes fast response times through in-memory caching while maintaining a simplified authentication model suitable for MVP validation.
+The TOMOSU backend API is designed as a high-performance, cache-optimized MVP system that provides essential social networking functionality for local community engagement. The system prioritizes fast response times through in-memory caching while maintaining a simplified authentication model suitable for MVP validation.
 
 The architecture follows FastAPI best practices with a clear separation of concerns between data access, business logic, and API presentation layers. The system is optimized for Azure Container Apps deployment with horizontal scaling capabilities.
 
