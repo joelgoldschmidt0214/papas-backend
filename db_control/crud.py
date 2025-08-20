@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
+# as models とすることで、以降のコードで models.USERS のようにアクセスできる
 from . import mymodels_MySQL as models
 from passlib.context import CryptContext
 
@@ -9,122 +10,70 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def get_password_hash(password: str) -> str:
-    """
-    平文のパスワードを受け取り、ハッシュ化されたパスワード文字列を返します。
-
-    Args:
-        password (str): ハッシュ化する平文のパスワード。
-
-    Returns:
-        str: ハッシュ化されたパスワード文字列。
-    """
+    """ヘルパー関数: 平文パスワードをハッシュ化します。"""
     return pwd_context.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """
-    平文パスワードとハッシュ化されたパスワードを比較検証します。
-
-    Args:
-        plain_password (str): 検証する平文のパスワード。
-        hashed_password (str): データベースに保存されているハッシュ化済みパスワード。
-
-    Returns:
-        bool: パスワードが一致すればTrue、そうでなければFalse。
-    """
+    """ヘルパー関数: 平文パスワードとハッシュを検証します。"""
     return pwd_context.verify(plain_password, hashed_password)
 
 
-# --- User CRUD ---
+# --- User SELECT (Read) Operations ---
 
 
-def get_user(db: Session, user_id: int) -> Optional[models.Users]:
+def select_user_by_id(db: Session, user_id: int) -> Optional[models.USERS]:
     """
-    ユーザーIDを指定して、単一のユーザー情報を取得します。
-
-    Args:
-        db (Session): データベースセッション。
-        user_id (int): 取得したいユーザーのID。
-
-    Returns:
-        Optional[models.Users]: 見つかったユーザーオブジェクト。見つからなければNone。
+    user_id を使用して単一のユーザーを取得します。
     """
-    return db.query(models.Users).filter(models.Users.id == user_id).first()
+    return db.query(models.USERS).filter(models.USERS.user_id == user_id).first()
 
 
-def get_user_by_email(db: Session, email: str) -> Optional[models.Users]:
+def select_user_by_email(db: Session, email: str) -> Optional[models.USERS]:
     """
-    メールアドレスを指定して、単一のユーザー情報を取得します。
-
-    Args:
-        db (Session): データベースセッション。
-        email (str): 取得したいユーザーのメールアドレス。
-
-    Returns:
-        Optional[models.Users]: 見つかったユーザーオブジェクト。見つからなければNone。
+    メールアドレスを使用して単一のユーザーを取得します。
     """
-    return db.query(models.Users).filter(models.Users.email == email).first()
+    return db.query(models.USERS).filter(models.USERS.email == email).first()
 
 
-def get_user_by_provider(
-    db: Session, provider: str, provider_user_id: str
-) -> Optional[models.Users]:
+def select_user_by_provider(
+    db: Session, provider: str, provider_id: str
+) -> Optional[models.USERS]:
     """
-    ソーシャルログイン情報（プロバイダ名とプロバイダ側ID）でユーザーを検索します。
-
-    Args:
-        db (Session): データベースセッション。
-        provider (str): プロバイダ名 (例: 'google')。
-        provider_user_id (str): プロバイダ側でのユーザー識別子。
-
-    Returns:
-        Optional[models.Users]: 見つかったユーザーオブジェクト。見つからなければNone。
+    ソーシャルログイン情報を使用してユーザーを取得します。
     """
-    # SocialLoginsテーブルから一致するレコードを検索
     social_login = (
-        db.query(models.SocialLogins)
+        db.query(models.SOCIAL_LOGINS)
         .filter(
-            models.SocialLogins.provider == provider,
-            models.SocialLogins.provider_user_id == provider_user_id,
+            models.SOCIAL_LOGINS.provider == provider,
+            models.SOCIAL_LOGINS.provider_id == provider_id,
         )
         .first()
     )
-    # レコードが存在すれば、関連するユーザーオブジェクトを返す
     if social_login:
         return social_login.user
     return None
 
 
-def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[models.Users]:
+def select_users(db: Session, skip: int = 0, limit: int = 100) -> List[models.USERS]:
     """
-    ユーザー情報の一覧を、ページネーション付きで取得します。
-
-    Args:
-        db (Session): データベースセッション。
-        skip (int): スキップするレコード数。
-        limit (int): 取得する最大レコード数。
-
-    Returns:
-        List[models.Users]: ユーザーオブジェクトのリスト。
+    ページネーション付きでユーザーの一覧を取得します。
     """
-    return db.query(models.Users).offset(skip).limit(limit).all()
+    return db.query(models.USERS).offset(skip).limit(limit).all()
 
 
-def create_user_with_password(db: Session, user_data: dict) -> models.Users:
+# --- User INSERT (Create) Operations ---
+
+
+def insert_user_with_password(db: Session, user_data: dict) -> models.USERS:
     """
-    メールアドレスとパスワードで新規ユーザーを作成します。
-
-    Args:
-        db (Session): データベースセッション。
-        user_data (dict): 'email', 'username', 'password' を含む辞書。
-
-    Returns:
-        models.Users: 作成されたユーザーオブジェクト。
+    ユーザー名、メールアドレス、パスワードを使用して新規ユーザーを登録します。
     """
     hashed_password = get_password_hash(user_data["password"])
-    db_user = models.Users(
+    db_user = models.USERS(
         email=user_data["email"],
         username=user_data["username"],
+        display_name=user_data.get("display_name"),
         password_hash=hashed_password,
     )
     db.add(db_user)
@@ -133,180 +82,373 @@ def create_user_with_password(db: Session, user_data: dict) -> models.Users:
     return db_user
 
 
-def create_user_with_provider(
-    db: Session, user_data: dict, provider_data: dict
-) -> models.Users:
+# --- User UPDATE Operations ---
+
+
+def update_user(
+    db: Session, user_id: int, user_update_data: dict
+) -> Optional[models.USERS]:
     """
-    ソーシャルログインで新規ユーザーを作成、または既存ユーザーに連携させます。
-
-    Args:
-        db (Session): データベースセッション。
-        user_data (dict): 'email', 'username' を含む辞書。
-        provider_data (dict): 'provider', 'provider_user_id' を含む辞書。
-
-    Returns:
-        models.Users: 新規作成または連携されたユーザーオブジェクト。
+    ユーザーの属性（表示名、自己紹介など）を更新します。
     """
-    # 同じメールアドレスのユーザーが既に存在するか検索
-    db_user = get_user_by_email(db, email=user_data["email"])
-
-    # ユーザーが存在しない場合は、パスワードなしで新規作成
-    if not db_user:
-        db_user = models.Users(
-            email=user_data["email"],
-            username=user_data["username"],
-        )
-        db.add(db_user)
+    db_user = select_user_by_id(db, user_id=user_id)
+    if db_user:
+        for key, value in user_update_data.items():
+            setattr(db_user, key, value)
         db.commit()
         db.refresh(db_user)
-
-    # SocialLoginsテーブルにソーシャルログイン情報を保存
-    db_social_login = models.SocialLogins(
-        user_id=db_user.id,
-        provider=provider_data["provider"],
-        provider_user_id=provider_data["provider_user_id"],
-    )
-    db.add(db_social_login)
-    db.commit()
-
     return db_user
 
 
-# --- Post CRUD ---
+# --- Post SELECT (Read) Operations ---
 
 
-def get_posts(db: Session, skip: int = 0, limit: int = 100) -> List[models.Posts]:
+def select_posts(db: Session, skip: int = 0, limit: int = 100) -> List[models.POSTS]:
     """
-    投稿の一覧を、作成日時の降順（新しい順）でページネーション付きで取得します。
-
-    Args:
-        db (Session): データベースセッション。
-        skip (int): スキップするレコード数。
-        limit (int): 取得する最大レコード数。
-
-    Returns:
-        List[models.Posts]: 投稿オブジェクトのリスト。
+    投稿の一覧を作成日時の降順（新しい順）で取得します。
     """
     return (
-        db.query(models.Posts)
-        .order_by(models.Posts.created_at.desc())
+        db.query(models.POSTS)
+        .order_by(models.POSTS.created_at.desc())
         .offset(skip)
         .limit(limit)
         .all()
     )
 
 
-def create_post(db: Session, content: str, user_id: int) -> models.Posts:
+def select_posts_by_user_id(
+    db: Session, user_id: int, skip: int = 0, limit: int = 100
+) -> List[models.POSTS]:
     """
-    新しい投稿を作成し、データベースに保存します。
-
-    Args:
-        db (Session): データベースセッション。
-        content (str): 投稿の本文。
-        user_id (int): 投稿者のユーザーID。
-
-    Returns:
-        models.Posts: 作成された投稿オブジェクト。
+    特定のユーザーによる投稿の一覧を取得します。
     """
-    db_post = models.Posts(content=content, user_id=user_id)
+    return (
+        db.query(models.POSTS)
+        .filter(models.POSTS.user_id == user_id)
+        .order_by(models.POSTS.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+def select_posts_by_tag_name(
+    db: Session, tag_name: str, skip: int = 0, limit: int = 100
+) -> List[models.POSTS]:
+    """
+    特定のタグ名に関連付けられた投稿の一覧を取得します。
+    """
+    return (
+        db.query(models.POSTS)
+        .join(models.POST_TAGS, models.POSTS.post_id == models.POST_TAGS.post_id)
+        .join(models.TAGS, models.POST_TAGS.tag_id == models.TAGS.tag_id)
+        .filter(models.TAGS.tag_name == tag_name)
+        .order_by(models.POSTS.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+# --- Post INSERT (Create) Operations ---
+
+
+def insert_post(db: Session, content: str, user_id: int) -> models.POSTS:
+    """
+    指定されたユーザーの新しい投稿を作成します。
+    """
+    db_post = models.POSTS(content=content, user_id=user_id)
     db.add(db_post)
     db.commit()
     db.refresh(db_post)
     return db_post
 
 
-# --- Like CRUD ---
+# --- Post DELETE Operations ---
 
 
-def create_or_delete_like(db: Session, user_id: int, post_id: int) -> str:
+def delete_post(db: Session, post_id: int, user_id: int) -> bool:
     """
-    投稿に「いいね」を追加、またはすでにあれば削除します（トグル動作）。
-
-    Args:
-        db (Session): データベースセッション。
-        user_id (int): いいね操作を行うユーザーのID。
-        post_id (int): いいね対象の投稿のID。
-
-    Returns:
-        str: 操作結果を示す文字列 ("liked" または "unliked")。
+    post_id を使用して投稿を削除します。ユーザーがその投稿の所有者であることを確認します。
     """
-    # 既にいいねが存在するか検索
-    existing_like = (
-        db.query(models.Likes)
-        .filter(models.Likes.user_id == user_id, models.Likes.post_id == post_id)
+    db_post = (
+        db.query(models.POSTS)
+        .filter(models.POSTS.post_id == post_id, models.POSTS.user_id == user_id)
         .first()
     )
-
-    if existing_like:
-        # いいねが存在すれば削除
-        db.delete(existing_like)
+    if db_post:
+        db.delete(db_post)
         db.commit()
-        return "unliked"
-    else:
-        # いいねが存在しなければ新規作成
-        db_like = models.Likes(user_id=user_id, post_id=post_id)
-        db.add(db_like)
-        db.commit()
-        return "liked"
+        return True
+    return False
 
 
-# --- Comment CRUD ---
+# --- Comment Operations ---
 
 
-def create_comment(
+def insert_comment(
     db: Session, content: str, user_id: int, post_id: int
-) -> models.Comments:
+) -> models.COMMENTS:
     """
-    投稿に新しいコメントを作成します。
-
-    Args:
-        db (Session): データベースセッション。
-        content (str): コメントの本文。
-        user_id (int): コメントを投稿するユーザーのID。
-        post_id (int): コメント対象の投稿のID。
-
-    Returns:
-        models.Comments: 作成されたコメントオブジェクト。
+    投稿に新しいコメントを追加します。
     """
-    db_comment = models.Comments(content=content, user_id=user_id, post_id=post_id)
+    db_comment = models.COMMENTS(content=content, user_id=user_id, post_id=post_id)
     db.add(db_comment)
     db.commit()
     db.refresh(db_comment)
     return db_comment
 
 
-# --- Bookmark CRUD ---
-
-
-def create_or_delete_bookmark(db: Session, user_id: int, post_id: int) -> str:
+def select_comments_by_post_id(
+    db: Session, post_id: int, skip: int = 0, limit: int = 100
+) -> List[models.COMMENTS]:
     """
-    投稿をブックマークに追加、またはすでにあれば削除します（トグル動作）。
-
-    Args:
-        db (Session): データベースセッション。
-        user_id (int): ブックマーク操作を行うユーザーのID。
-        post_id (int): ブックマーク対象の投稿のID。
-
-    Returns:
-        str: 操作結果を示す文字列 ("bookmarked" または "unbookmarked")。
+    特定の投稿に対するコメントの一覧を取得します。
     """
-    # 既にブックマークが存在するか検索
+    return (
+        db.query(models.COMMENTS)
+        .filter(models.COMMENTS.post_id == post_id)
+        .order_by(models.COMMENTS.created_at.asc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+# --- Like Operations ---
+
+
+def insert_or_delete_like(db: Session, user_id: int, post_id: int) -> str:
+    """
+    「いいね」が存在しない場合は追加し、存在する場合は削除します（トグル動作）。
+    """
+    existing_like = (
+        db.query(models.LIKES)
+        .filter(models.LIKES.user_id == user_id, models.LIKES.post_id == post_id)
+        .first()
+    )
+    if existing_like:
+        db.delete(existing_like)
+        db.commit()
+        return "deleted"
+    else:
+        db_like = models.LIKES(user_id=user_id, post_id=post_id)
+        db.add(db_like)
+        db.commit()
+        return "inserted"
+
+
+# --- Bookmark Operations ---
+
+
+def insert_or_delete_bookmark(db: Session, user_id: int, post_id: int) -> str:
+    """
+    ブックマークが存在しない場合は追加し、存在する場合は削除します（トグル動作）。
+    """
     existing_bookmark = (
-        db.query(models.Bookmarks)
+        db.query(models.BOOKMARKS)
         .filter(
-            models.Bookmarks.user_id == user_id, models.Bookmarks.post_id == post_id
+            models.BOOKMARKS.user_id == user_id, models.BOOKMARKS.post_id == post_id
         )
         .first()
     )
-
     if existing_bookmark:
-        # ブックマークが存在すれば削除
         db.delete(existing_bookmark)
         db.commit()
-        return "unbookmarked"
+        return "deleted"
     else:
-        # ブックマークが存在しなければ新規作成
-        db_bookmark = models.Bookmarks(user_id=user_id, post_id=post_id)
+        db_bookmark = models.BOOKMARKS(user_id=user_id, post_id=post_id)
         db.add(db_bookmark)
         db.commit()
-        return "bookmarked"
+        return "inserted"
+
+
+def select_bookmarked_posts_by_user_id(
+    db: Session, user_id: int, skip: int = 0, limit: int = 100
+) -> List[models.POSTS]:
+    """
+    特定のユーザーがブックマークした投稿の一覧を取得します。
+    """
+    return (
+        db.query(models.POSTS)
+        .join(models.BOOKMARKS, models.POSTS.post_id == models.BOOKMARKS.post_id)
+        .filter(models.BOOKMARKS.user_id == user_id)
+        .order_by(models.BOOKMARKS.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+# --- Follow Operations ---
+
+
+def insert_or_delete_follow(db: Session, follower_id: int, following_id: int) -> str:
+    """
+    フォロー関係が存在しない場合は作成し、存在する場合は削除します（トグル動作）。
+    """
+    if follower_id == following_id:  # 自分自身はフォローできない
+        return "error_self_follow"
+
+    existing_follow = (
+        db.query(models.FOLLOWS)
+        .filter(
+            models.FOLLOWS.follower_id == follower_id,
+            models.FOLLOWS.following_id == following_id,
+        )
+        .first()
+    )
+    if existing_follow:
+        db.delete(existing_follow)
+        db.commit()
+        return "deleted"  # unfollowed
+    else:
+        db_follow = models.FOLLOWS(follower_id=follower_id, following_id=following_id)
+        db.add(db_follow)
+        db.commit()
+        return "inserted"  # followed
+
+
+def select_followers(
+    db: Session, user_id: int, skip: int = 0, limit: int = 100
+) -> List[models.USERS]:
+    """
+    指定された user_id をフォローしているユーザーの一覧（フォロワー）を取得します。
+    """
+    return (
+        db.query(models.USERS)
+        .join(models.FOLLOWS, models.USERS.user_id == models.FOLLOWS.follower_id)
+        .filter(models.FOLLOWS.following_id == user_id)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+def select_following(
+    db: Session, user_id: int, skip: int = 0, limit: int = 100
+) -> List[models.USERS]:
+    """
+    指定された user_id がフォローしているユーザーの一覧を取得します。
+    """
+    return (
+        db.query(models.USERS)
+        .join(models.FOLLOWS, models.USERS.user_id == models.FOLLOWS.following_id)
+        .filter(models.FOLLOWS.follower_id == user_id)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+# --- Tag & Post_Tag Operations ---
+
+
+def _select_or_insert_tag(db: Session, tag_name: str) -> models.TAGS:
+    """
+    ヘルパー関数: タグ名でタグを検索し、存在しない場合は作成します。
+    """
+    tag = db.query(models.TAGS).filter(models.TAGS.tag_name == tag_name).first()
+    if not tag:
+        tag = models.TAGS(tag_name=tag_name)
+        db.add(tag)
+        db.commit()
+        db.refresh(tag)
+    return tag
+
+
+def insert_tag_to_post(
+    db: Session, post_id: int, tag_name: str
+) -> Optional[models.POST_TAGS]:
+    """
+    タグを作成し、投稿に関連付けます。
+    """
+    tag = _select_or_insert_tag(db, tag_name)
+
+    # 既に関連が存在するかチェック
+    existing_relation = (
+        db.query(models.POST_TAGS).filter_by(post_id=post_id, tag_id=tag.tag_id).first()
+    )
+    if existing_relation:
+        return existing_relation  # 既に存在する場合は何もしない
+
+    post_tag = models.POST_TAGS(post_id=post_id, tag_id=tag.tag_id)
+    db.add(post_tag)
+    db.commit()
+    db.refresh(post_tag)
+    return post_tag
+
+
+def delete_tag_from_post(db: Session, post_id: int, tag_id: int) -> bool:
+    """
+    投稿とタグの関連付けを削除します。
+    """
+    relation = (
+        db.query(models.POST_TAGS).filter_by(post_id=post_id, tag_id=tag_id).first()
+    )
+    if relation:
+        db.delete(relation)
+        db.commit()
+        return True
+    return False
+
+
+# --- Survey Operations ---
+
+
+def select_surveys(
+    db: Session, skip: int = 0, limit: int = 100
+) -> List[models.SURVEYS]:
+    """
+    全てのアンケートの一覧を取得します。
+    """
+    return db.query(models.SURVEYS).offset(skip).limit(limit).all()
+
+
+def insert_survey(db: Session, survey_data: dict) -> models.SURVEYS:
+    """
+    新しいアンケートを作成します。
+    """
+    db_survey = models.SURVEYS(
+        title=survey_data["title"],
+        question_text=survey_data.get("question_text"),
+        points=survey_data.get("points", 0),
+    )
+    db.add(db_survey)
+    db.commit()
+    db.refresh(db_survey)
+    return db_survey
+
+
+def insert_survey_response(db: Session, response_data: dict) -> models.SURVEY_RESPONSES:
+    """
+    ユーザーのアンケート回答を登録します。
+    """
+    db_response = models.SURVEY_RESPONSES(
+        user_id=response_data["user_id"],
+        survey_id=response_data["survey_id"],
+        choice=response_data["choice"],
+        comment=response_data.get("comment"),
+    )
+    db.add(db_response)
+    db.commit()
+    db.refresh(db_response)
+    return db_response
+
+
+def select_responses_by_survey_id(
+    db: Session, survey_id: int, skip: int = 0, limit: int = 100
+) -> List[models.SURVEY_RESPONSES]:
+    """
+    特定のアンケートに対する全ての回答を取得します。
+    """
+    return (
+        db.query(models.SURVEY_RESPONSES)
+        .filter(models.SURVEY_RESPONSES.survey_id == survey_id)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+# --- END OF FILE crud.py ---
