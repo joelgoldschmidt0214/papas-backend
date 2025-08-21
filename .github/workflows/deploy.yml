@@ -65,9 +65,16 @@ jobs:
       # 'placeholder' タグを、ビルドしたイメージの実際のタグ (コミットSHA) に置換する
       - name: Update YAML with image tag
         run: |
-          sed -i "s|image: .*:placeholder|${{ secrets.ACR_NAME }}.azurecr.io/${{ secrets.ACA_APP_NAME }}:${{ github.sha }}|g" azure-container-app.yaml
+          sed -i "s|image: .*:placeholder|image: ${{ secrets.ACR_NAME }}.azurecr.io/${{ secrets.ACA_APP_NAME }}:${{ github.sha }}|g" azure-container-app.yaml
 
-      # ステップ 7: Azure Container Appsにデプロイ
+      # sedコマンド実行後のYAMLファイルの内容をログに出力して確認する
+      - name: Display YAML file for debugging
+        run: |
+          echo "--- Content of azure-container-app.yaml after substitution ---"
+          cat azure-container-app.yaml
+          echo "--------------------------------------------------------------"
+
+          # ステップ 7: Azure Container Appsにデプロイ
       # imageToDeploy は不要なため削除
       - name: Deploy to Azure Container Apps
         uses: azure/container-apps-deploy-action@v1
