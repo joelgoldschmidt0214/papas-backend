@@ -61,14 +61,18 @@ jobs:
               ssl-ca-path="${{ secrets.SSL_CA_PATH }}" \
               session-secret-key="${{ secrets.SESSION_SECRET_KEY }}"
 
-      # ステップ 6: Azure Container Appsにデプロイ
-      # azure-container-app.yamlをインフラの設計図としてデプロイを実行
+      # ステップ 6: デプロイ用のYAMLファイル内のイメージ名を動的に更新
+      # 'placeholder' タグを、ビルドしたイメージの実際のタグ (コミットSHA) に置換する
+      - name: Update YAML with image tag
+        run: |
+          sed -i "s|image: .*:placeholder|${{ secrets.ACR_NAME }}.azurecr.io/${{ secrets.ACA_APP_NAME }}:${{ github.sha }}|g" azure-container-app.yaml
+
+      # ステップ 7: Azure Container Appsにデプロイ
+      # imageToDeploy は不要なため削除
       - name: Deploy to Azure Container Apps
         uses: azure/container-apps-deploy-action@v1
         with:
           containerAppName: ${{ secrets.ACA_APP_NAME }}
           resourceGroup: ${{ secrets.RESOURCE_GROUP_NAME }}
-          # インフラ定義の唯一の正しい情報源としてYAMLファイルを参照
           yamlConfigPath: azure-container-app.yaml
-          # YAMLファイル内のイメージ名を、ステップ4でビルドした最新のイメージに上書き
-          imageToDeploy: ${{ secrets.ACR_NAME }}.azurecr.io/${{ secrets.ACA_APP_NAME }}:${{ github.sha }}
+          # imageToDeploy: ${{ secrets.ACR_NAME }}.azurecr.io/${{ secrets.ACA_APP_NAME }}:${{ github.sha }}
