@@ -1,24 +1,57 @@
-# 1. ベースイメージの指定 (Python 3.12 の軽量版)
-FROM python:3.12-slim
+# Multi-stage build for production optimization
+FROM python:3.12-slim as builder
 
-# 2. 作業ディレクトリの作成と指定
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
 WORKDIR /app
 
-# 3. 依存関係ファイルの先行コピー
-COPY requirements.txt ./
+# Copy requirements and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir --user -r requirements.txt
 
-# 4. 依存関係のインストール
-# --no-cache-dir はイメージサイズを小さく保つためのベストプラクティス
-RUN pip install --no-cache-dir -r requirements.txt
+# Production stage
+FROM python:3.12-slim
 
-# 5. アプリケーションコードをコピー
-# ここでは ./app のようにアプリのコードがあるディレクトリだけをコピーするのがより望ましいですが、
-# './' でも動作します。
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r appuser && useradd -r -g appuser appuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy Python packages from builder stage
+COPY --from=builder /root/.local /root/.local
+
+# Make sure scripts in .local are usable
+ENV PATH=/root/.local/bin:$PATH
+
+# Copy application code
 COPY . .
 
-# 6. FastAPIが使用するポートを公開
+# Create logs directory
+RUN mkdir -p /app/logs && chown -R appuser:appuser /app/logs
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+ENV ENVIRONMENT=production
+
+# Expose port
 EXPOSE 8000
 
-# 7. コンテナ起動時のデフォルトコマンド
-# ここが最重要！コンテナ起動時にUvicornサーバーを自動で起動する
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/api/v1/system/health || exit 1
+
+# Switch to non-root user
+USER appuser
+
+# Use the new startup script
+CMD ["python", "startup.py"]

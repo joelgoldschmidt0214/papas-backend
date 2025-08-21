@@ -1,0 +1,113 @@
+# Azure Container Apps - Final Configuration
+# This file is the Single Source of Truth for the backend infrastructure.
+
+# --- 1. Basic Information (Copied from 'az show') ---
+location: Australia East
+name: aca-gen10-02 # Your actual app name
+resourceGroup: rg-001-gen10
+
+# --- 2. Properties (Combined from 'az show' and best practices) ---
+properties:
+  environmentId: /subscriptions/9b680e6d-e5a6-4381-aad5-a30afcbc8459/resourceGroups/rg-001-gen10/providers/Microsoft.App/managedEnvironments/cae-001-management-gen10
+
+  configuration:
+    activeRevisionsMode: Single
+
+    # --- Ingress: Recommended to add CORS Policy for better security ---
+    ingress:
+      external: true
+      targetPort: 8000
+      allowInsecure: false
+      transport: Auto # 'Auto' or 'http' is fine
+      traffic:
+        - latestRevision: true
+          weight: 100
+      corsPolicy: # RECOMMENDATION: Add this section from AI's file
+        allowedOrigins:
+          - "https://aca-gen10-01.ambitiousground-989c3319.australiaeast.azurecontainerapps.io" # Frontend URL
+          - "http://localhost:3000"
+          - "http://localhost:3001"
+        allowedMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        allowCredentials: true
+        allowedHeaders:
+          - "*"
+
+    # --- Registries: Using Secure Managed Identity (Best Practice) ---
+    registries:
+      - server: acrtech0for10th1.azurecr.io
+        identity: system # This enables passwordless access to your ACR
+
+    # --- Secrets: Names are declared, values are set by CI/CD ---
+    secrets:
+      - name: db-user
+      - name: db-password
+      - name: db-host
+      - name: db-name
+      - name: db-port # This was also a secret in your setup
+      - name: ssl-ca-path # This was also a secret in your setup
+      - name: session-secret-key # Add this from AI's file if not already present
+
+  # --- 3. Template (Heart of the container definition) ---
+  template:
+    containers:
+      - image: acrtech0for10th1.azurecr.io/aca-gen10-02:placeholder # This will be overwritten by CI/CD
+        name: aca-gen10-02
+
+        # --- Environment Variables (Copied from 'az show') ---
+        env:
+          - name: DB_USER
+            secretRef: db-user
+          - name: DB_PASSWORD
+            secretRef: db-password
+          - name: DB_HOST
+            secretRef: db-host
+          - name: DB_PORT
+            secretRef: db-port
+          - name: DB_NAME
+            secretRef: db-name
+          - name: SSL_CA_PATH
+            secretRef: ssl-ca-path
+          - name: SESSION_SECRET_KEY # Add this if it's missing
+            secretRef: session-secret-key
+          # Add other non-secret env vars here if needed
+          - name: ENVIRONMENT
+            value: "production"
+          - name: WORKERS
+            value: "2" # Example value, adjust if needed
+
+        # --- Resources (Copied exactly from 'az show' per company rules) ---
+        resources:
+          cpu: 0.25
+          memory: 0.5Gi
+
+        # --- Probes: STRONGLY RECOMMENDED to add these for stability ---
+        probes:
+          - type: Liveness # If this fails, the container is restarted
+            httpGet:
+              path: /api/v1/system/health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 60
+          - type: Readiness # If this fails, traffic is not sent to the container
+            httpGet:
+              path: /api/v1/system/health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          - type: Startup # Checks if the app has started successfully
+            httpGet:
+              path: / # Use the basic health check for startup
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 18 # Allows for 3 minutes (18 * 10s) to start up
+
+    # --- Scale (Copied exactly from 'az show' per company rules) ---
+    scale:
+      minReplicas: 1
+      maxReplicas: 1
