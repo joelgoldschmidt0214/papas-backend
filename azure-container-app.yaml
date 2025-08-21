@@ -55,8 +55,7 @@ properties:
   # --- 3. Template (Heart of the container definition) ---
   template:
     containers:
-      - image: acrtech0for10th1.azurecr.io/aca-gen10-02:placeholder # This will be overwritten by CI/CD
-        name: aca-gen10-02
+      - name: aca-gen10-02
 
         # --- Environment Variables (Copied from 'az show') ---
         env:
