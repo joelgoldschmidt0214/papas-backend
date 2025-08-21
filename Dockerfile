@@ -12,7 +12,7 @@ WORKDIR /app
 
 # Copy requirements and install dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Production stage
 FROM python:3.12-slim
@@ -26,11 +26,9 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy Python packages from builder stage
-COPY --from=builder /root/.local /root/.local
-
-# Make sure scripts in .local are usable
-ENV PATH=/root/.local/bin:$PATH
+# Copy Python packages and commands from builder stage
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application code
 COPY . .
