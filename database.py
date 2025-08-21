@@ -256,7 +256,8 @@ class DatabaseManager:
                 "checked_in": pool.checkedin(),
                 "checked_out": pool.checkedout(),
                 "overflow": pool.overflow(),
-                "invalid": pool.invalid(),
+                # pool.invalid() を pool.status() に変更
+                "pool_status_summary": pool.status(),
             }
 
             return {
@@ -295,7 +296,8 @@ class DatabaseManager:
             "checked_in_connections": pool.checkedin(),
             "checked_out_connections": pool.checkedout(),
             "overflow_connections": pool.overflow(),
-            "invalid_connections": pool.invalid(),
+            # pool.invalid() は廃止されたため削除
+            # "invalid_connections": pool.invalid(),
             "total_connections": pool.size() + pool.overflow(),
             "available_connections": pool.checkedin(),
             "utilization_percentage": round(
