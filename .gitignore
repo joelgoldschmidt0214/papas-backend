@@ -66,7 +66,7 @@ venv.bak/
 
 # Secrets - 非常に重要！
 *.env
-.env.*
+# .env.*
 
 # SQLite databases
 *.sqlite3
@@ -76,3 +76,6 @@ Thumbs.db
 
 # SSL証明書
 # *.pem
+
+# DevContainer local settings
+devcontainer.local.json
