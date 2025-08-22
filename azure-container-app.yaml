@@ -85,20 +85,43 @@ properties:
           cpu: 0.25
           memory: 0.5Gi
 
+        # # --- Probes: STRONGLY RECOMMENDED to add these for stability ---
+        # probes:
+        #   - type: Liveness # If this fails, the container is restarted
+        #     httpGet:
+        #       path: /api/v1/system/health
+        #       port: 8000
+        #     initialDelaySeconds: 45
+        #     periodSeconds: 60
+        #   - type: Readiness # If this fails, traffic is not sent to the container
+        #     httpGet:
+        #       path: /api/v1/system/health
+        #       port: 8000
+        #     initialDelaySeconds: 15
+        #     periodSeconds: 30
+        #   - type: Startup # Checks if the app has started successfully
+        #     httpGet:
+        #       path: / # Use the basic health check for startup
+        #       port: 8000
+        #     initialDelaySeconds: 5
+        #     periodSeconds: 10
+        #     failureThreshold: 18 # Allows for 3 minutes (18 * 10s) to start up
         # --- Probes: STRONGLY RECOMMENDED to add these for stability ---
         probes:
           - type: Liveness # If this fails, the container is restarted
             httpGet:
-              path: /api/v1/system/health
+              path: /api/v1/system/live   # ★★★ 修正点1: 新しい軽量エンドポイントに変更 ★★★
               port: 8000
             initialDelaySeconds: 45
             periodSeconds: 60
+            timeoutSeconds: 2             # ★★★ 修正点2: タイムアウトを明示的に設定（推奨） ★★★
           - type: Readiness # If this fails, traffic is not sent to the container
             httpGet:
-              path: /api/v1/system/health
+              path: /api/v1/system/health # ← こちらはDB接続も確認する重いエンドポイントのまま
               port: 8000
             initialDelaySeconds: 15
             periodSeconds: 30
+            timeoutSeconds: 10            # ★★★ 修正点3: DBの遅延を許容するため、長めのタイムアウトを設定 ★★★
           - type: Startup # Checks if the app has started successfully
             httpGet:
               path: / # Use the basic health check for startup
