@@ -1,3 +1,5 @@
+from config import get_settings
+from database import initialize_database
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -31,6 +33,9 @@ from api.surveys import router as surveys_router
 from cache.manager import cache_manager
 from error_handlers import register_exception_handlers
 from exceptions import ServiceUnavailableError
+
+from cache.manager import cache_manager
+from database import get_db_session
 
 # Get application settings and logger
 settings = get_settings()
@@ -122,6 +127,76 @@ app = FastAPI(
     ],
 )
 
+
+@app.on_event("startup")
+async def startup_event():
+    """
+    アプリケーション起動時に、正しい順序で初期化処理を実行する。
+    """
+    print("=" * 50)
+    print(">>>> TRIGGERING STARTUP EVENT IN main.py <<<<")
+    print("=" * 50)
+
+    # 1. 設定を読み込む
+    print(">>>> 1. Loading settings... <<<<")
+    settings = get_settings()
+
+    # 2. データベースを初期化する
+    print(">>>> 2. Initializing database... <<<<")
+    if not initialize_database(settings):
+        print("FATAL: Database initialization failed. Exiting.")
+        # エラーを発生させてアプリケーションを停止させる
+        raise RuntimeError("Database initialization failed.")
+    print(">>>> Database initialized SUCCESSFULLY. <<<<")
+
+    # 3. データベースセッションを取得する
+    print(">>>> 3. Getting DB session... <<<<")
+    db = next(get_db_session())
+    print(">>>> DB session acquired. <<<<")
+
+    try:
+        # 4. キャッシュを初期化する
+        print(">>>> 4. Initializing cache... <<<<")
+        # manager.pyのtry...exceptは外したままなので、ここでエラーが出れば必ず表示される
+        if not cache_manager.initialize(db):
+            print("FATAL: Cache initialization failed. Exiting.")
+            raise RuntimeError("Cache initialization failed.")
+        print(">>>> Cache initialized SUCCESSFULLY! <<<<")
+
+    finally:
+        # 5. 必ずDBセッションを閉じる
+        db.close()
+        print(">>>> 5. DATABASE SESSION CLOSED. <<<<")
+        print("=" * 50)
+        print(">>>> STARTUP COMPLETE! <<<<")
+        print("=" * 50)
+
+
+# @app.on_event("startup")
+# async def startup_event():
+#     """
+#     アプリケーション起動時に実行されるイベント。
+#     ここで強制的にキャッシュ初期化を試みる。
+#     """
+#     print("=" * 50)
+#     print(">>>> TRIGGERING STARTUP EVENT IN main.py <<<<")
+#     print("=" * 50)
+
+#     # データベースセッションを取得
+#     db = next(get_db_session())
+
+#     try:
+#         print(">>>> CALLING cache_manager.initialize()... <<<<")
+#         # manager.pyのtry...exceptは外したままなので、ここでエラーが出れば必ず表示される
+#         cache_manager.initialize(db)
+#         print(">>>> cache_manager.initialize() FINISHED SUCCESSFULLY! <<<<")
+
+#     finally:
+#         # 必ずDBセッションを閉じる
+#         db.close()
+#         print(">>>> DATABASE SESSION CLOSED. <<<<")
+
+
 # Response compression middleware (optimized for large payloads)
 app.add_middleware(GZipMiddleware, minimum_size=settings.response_compression_threshold)
 
@@ -135,7 +210,8 @@ app.add_middleware(
 )
 
 
-# Request logging and performance tracking middleware
+# Request logging and performance tracking mi
+# leware
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start_time = time.time()

@@ -1,6 +1,9 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
+from sqlalchemy.orm import joinedload, selectinload
+from . import mymodels_MySQL as models
+
 # as models とすることで、以降のコードで models.USERS のようにアクセスできる
 from . import mymodels_MySQL as models
 from passlib.context import CryptContext
@@ -106,14 +109,38 @@ def update_user(
 def select_posts(db: Session, skip: int = 0, limit: int = 100) -> List[models.POSTS]:
     """
     投稿の一覧を作成日時の降順（新しい順）で取得します。
+    関連データをEager LoadingしてN+1問題を回避します。
     """
     return (
         db.query(models.POSTS)
+        .options(
+            # to-oneリレーションはjoinedloadが効率的
+            joinedload(models.POSTS.user),
+            # to-manyリレーションはselectinloadが効率的
+            selectinload(models.POSTS.images),
+            selectinload(models.POSTS.post_tags).joinedload(models.POST_TAGS.tag),
+            selectinload(models.POSTS.likes),
+            selectinload(models.POSTS.comments),
+            selectinload(models.POSTS.bookmarks),
+        )
         .order_by(models.POSTS.created_at.desc())
         .offset(skip)
         .limit(limit)
         .all()
     )
+
+
+# def select_posts(db: Session, skip: int = 0, limit: int = 100) -> List[models.POSTS]:
+#     """
+#     投稿の一覧を作成日時の降順（新しい順）で取得します。
+#     """
+#     return (
+#         db.query(models.POSTS)
+#         .order_by(models.POSTS.created_at.desc())
+#         .offset(skip)
+#         .limit(limit)
+#         .all()
+#     )
 
 
 def select_posts_by_user_id(

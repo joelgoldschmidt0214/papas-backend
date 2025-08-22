@@ -138,49 +138,49 @@ class ApplicationStartup:
 
     def initialize_cache(self) -> bool:
         """Initialize application cache"""
-        try:
-            self.logger.info("Initializing application cache...")
+        # try:
+        self.logger.info("Initializing application cache...")
 
-            # Get database session for cache initialization
-            db_manager = get_database_manager()
+        # Get database session for cache initialization
+        db_manager = get_database_manager()
 
-            with db_manager.get_session_context() as session:
-                cache_start_time = time.time()
+        with db_manager.get_session_context() as session:
+            cache_start_time = time.time()
 
-                success = cache_manager.initialize(session)
+            success = cache_manager.initialize(session)
 
-                if not success:
-                    self.logger.error("Cache initialization failed")
-                    return False
+            if not success:
+                self.logger.error("Cache initialization failed")
+                return False
 
-                cache_init_time = time.time() - cache_start_time
+            cache_init_time = time.time() - cache_start_time
 
-                # Get cache statistics
-                stats = cache_manager.get_cache_stats()
+            # Get cache statistics
+            stats = cache_manager.get_cache_stats()
 
-                self.logger.info(
-                    f"Cache initialized successfully in {cache_init_time:.2f}s"
+            self.logger.info(
+                f"Cache initialized successfully in {cache_init_time:.2f}s"
+            )
+            self.logger.info(
+                f"Cached data: {stats['posts_count']} posts, {stats['users_count']} users, "
+                f"{stats['comments_count']} comments, {stats['tags_count']} tags"
+            )
+
+            # Validate cache initialization time requirement (< 5 seconds)
+            if cache_init_time > 5.0:
+                self.logger.warning(
+                    f"Cache initialization took {cache_init_time:.2f}s (target: < 5s)"
                 )
+            else:
                 self.logger.info(
-                    f"Cached data: {stats['posts_count']} posts, {stats['users_count']} users, "
-                    f"{stats['comments_count']} comments, {stats['tags_count']} tags"
+                    f"✓ Cache initialization meets performance target (< 5s)"
                 )
 
-                # Validate cache initialization time requirement (< 5 seconds)
-                if cache_init_time > 5.0:
-                    self.logger.warning(
-                        f"Cache initialization took {cache_init_time:.2f}s (target: < 5s)"
-                    )
-                else:
-                    self.logger.info(
-                        f"✓ Cache initialization meets performance target (< 5s)"
-                    )
+            return True
 
-                return True
-
-        except Exception as e:
-            self.logger.error(f"Cache initialization error: {e}", exc_info=True)
-            return False
+        # except Exception as e:
+        #     self.logger.error(f"Cache initialization error: {e}", exc_info=True)
+        #     return False
 
     def run_startup_tests(self) -> bool:
         """Run startup validation tests"""
