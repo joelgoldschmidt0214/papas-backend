@@ -349,6 +349,27 @@ async def root():
 
 
 @app.get(
+    "/api/v1/system/live",  # 新しいパス
+    tags=["health"],
+    summary="Liveness Probe（生存確認）",
+    description="""
+    アプリケーションプロセスが正常に応答しているかを確認するための、超軽量なエンドポイントです。
+    外部サービスへの依存はなく、常に高速に応答を返します。
+    ACAのLiveness Probe（生存確認）での使用を想定しています。
+    """,
+    responses={
+        200: {
+            "description": "サービスは生存しています",
+            "content": {"application/json": {"example": {"status": "alive"}}},
+        },
+    },
+)
+async def liveness_check():
+    """Liveness Probe用のエンドポイント"""
+    return {"status": "alive"}
+
+
+@app.get(
     "/api/v1/system/health",
     tags=["system"],
     summary="詳細ヘルスチェック",
