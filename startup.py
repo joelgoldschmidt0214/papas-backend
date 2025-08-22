@@ -156,7 +156,8 @@ class ApplicationStartup:
                 cache_init_time = time.time() - cache_start_time
 
                 # Get cache statistics
-                stats = cache_manager.get_cache_stats()
+                # stats = cache_manager.get_cache_stats()
+                stats = cache_manager.cache_stats
 
                 self.logger.info(
                     f"Cache initialized successfully in {cache_init_time:.2f}s"
@@ -212,6 +213,7 @@ class ApplicationStartup:
                 return False
 
             # Test 3: Performance validation
+            # cache_stats = cache_manager.get_cache_stats()
             cache_stats = cache_manager.get_cache_stats()
             if cache_stats.get("initialization_time", 0) > 5.0:
                 self.logger.warning("Cache initialization time exceeds target (5s)")
