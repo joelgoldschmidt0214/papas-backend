@@ -19,7 +19,10 @@ from models.responses import (
     CommentResponse,
     TagResponse,
     SurveyResponse,
+    PostImageResponse,
 )
+
+from sqlalchemy.orm import selectinload, joinedload
 
 logger = logging.getLogger(__name__)
 
@@ -119,69 +122,67 @@ class CacheManager:
         Initialize cache by loading all data from database
         Returns True if successful, False otherwise
         """
-        try:
-            start_time = datetime.now()
-            logger.info("Starting cache initialization...")
+        # try:
+        start_time = datetime.now()
+        logger.info("Starting cache initialization...")
 
-            # Load all data in order of dependencies
-            self._load_users(db)
-            self._load_tags(db)
-            self._load_posts(db)
-            self._load_comments(db)
-            self._load_likes(db)
-            self._load_bookmarks(db)
-            self._load_follows(db)
-            self._load_surveys(db)
+        # Load all data in order of dependencies
+        self._load_users(db)
+        self._load_tags(db)
+        self._load_posts(db)
+        self._load_comments(db)
+        self._load_likes(db)
+        self._load_bookmarks(db)
+        self._load_follows(db)
+        self._load_surveys(db)
 
-            # Update cache statistics
-            end_time = datetime.now()
-            self.cache_stats.update(
-                {
-                    "initialized": True,
-                    "initialization_time": (end_time - start_time).total_seconds(),
-                    "posts_count": len(self.posts),
-                    "users_count": len(self.users),
-                    "comments_count": sum(
-                        len(comments) for comments in self.comments.values()
-                    ),
-                    "tags_count": len(self.tags),
-                    "surveys_count": len(self.surveys),
-                    "likes_count": sum(
-                        len(user_ids) for user_ids in self.likes.values()
-                    ),
-                    "bookmarks_count": sum(
-                        len(post_ids) for post_ids in self.bookmarks.values()
-                    ),
-                    "follows_count": sum(
-                        len(following_ids) for following_ids in self.follows.values()
-                    ),
-                }
-            )
+        # Update cache statistics
+        end_time = datetime.now()
+        self.cache_stats.update(
+            {
+                "initialized": True,
+                "initialization_time": (end_time - start_time).total_seconds(),
+                "posts_count": len(self.posts),
+                "users_count": len(self.users),
+                "comments_count": sum(
+                    len(comments) for comments in self.comments.values()
+                ),
+                "tags_count": len(self.tags),
+                "surveys_count": len(self.surveys),
+                "likes_count": sum(len(user_ids) for user_ids in self.likes.values()),
+                "bookmarks_count": sum(
+                    len(post_ids) for post_ids in self.bookmarks.values()
+                ),
+                "follows_count": sum(
+                    len(following_ids) for following_ids in self.follows.values()
+                ),
+            }
+        )
 
-            # Pre-compute sorted post list for performance
-            self._rebuild_sorted_posts_cache()
+        # Pre-compute sorted post list for performance
+        self._rebuild_sorted_posts_cache()
 
-            logger.info(
-                f"Cache initialization completed in {self.cache_stats['initialization_time']:.2f} seconds"
-            )
-            logger.info(
-                f"Loaded: {self.cache_stats['posts_count']} posts, "
-                f"{self.cache_stats['users_count']} users, "
-                f"{self.cache_stats['comments_count']} comments, "
-                f"{self.cache_stats['tags_count']} tags, "
-                f"{self.cache_stats['surveys_count']} surveys"
-            )
+        logger.info(
+            f"Cache initialization completed in {self.cache_stats['initialization_time']:.2f} seconds"
+        )
+        logger.info(
+            f"Loaded: {self.cache_stats['posts_count']} posts, "
+            f"{self.cache_stats['users_count']} users, "
+            f"{self.cache_stats['comments_count']} comments, "
+            f"{self.cache_stats['tags_count']} tags, "
+            f"{self.cache_stats['surveys_count']} surveys"
+        )
 
-            # Log memory usage for monitoring
-            memory_info = self._get_memory_usage()
-            logger.info(f"Cache memory usage: {memory_info['total_mb']:.2f} MB")
+        # Log memory usage for monitoring
+        memory_info = self._get_memory_usage()
+        logger.info(f"Cache memory usage: {memory_info['total_mb']:.2f} MB")
 
-            return True
+        return True
 
-        except Exception as e:
-            logger.error(f"Cache initialization failed: {str(e)}")
-            self.cache_stats["initialized"] = False
-            return False
+        # except Exception as e:
+        #     logger.error(f"Cache initialization failed: {str(e)}")
+        #     self.cache_stats["initialized"] = False
+        #     return False
 
     def _load_users(self, db: Session) -> None:
         """Load all users into cache"""
@@ -223,36 +224,94 @@ class CacheManager:
     def _load_posts(self, db: Session) -> None:
         """Load all posts with their tags into cache"""
         logger.info("Loading posts...")
-        db_posts = crud.select_posts(db, skip=0, limit=10000)  # Load all posts
+
+        # db_posts = crud.select_posts(db, skip=0, limit=10000)  # Load all posts
+        db_posts = (
+            db.query(models.POSTS)
+            .options(
+                # to-one（ユーザー情報）は joinedload
+                joinedload(models.POSTS.user),
+                # to-many（画像、タグ、いいね、コメント、ブックマーク）は selectinload
+                selectinload(models.POSTS.images),
+                selectinload(models.POSTS.post_tags).joinedload(models.POST_TAGS.tag),
+                selectinload(models.POSTS.likes),
+                selectinload(models.POSTS.comments),
+                selectinload(models.POSTS.bookmarks),
+            )
+            .order_by(models.POSTS.created_at.desc())
+            .all()
+        )
+
+        # for db_post in db_posts:
+        #     # Get author information
+        #     author = self.users.get(db_post.user_id)
+        #     if not author:
+        #         logger.warning(f"Author not found for post {db_post.post_id}")
+        #         continue
+
+        #     # Get tags for this post
+        #     post_tags = (
+        #         db.query(models.POST_TAGS, models.TAGS)
+        #         .join(models.TAGS, models.POST_TAGS.tag_id == models.TAGS.tag_id)
+        #         .filter(models.POST_TAGS.post_id == db_post.post_id)
+        #         .all()
+        #     )
+
+        #     tag_responses = []
+        #     tag_names = []
+        #     for post_tag, tag in post_tags:
+        #         if tag.tag_name in self.tags:
+        #             tag_responses.append(self.tags[tag.tag_name])
+        #             tag_names.append(tag.tag_name)
+
+        #     # Store tag relationships
+        #     self.post_tags[db_post.post_id] = tag_names
+        #     for tag_name in tag_names:
+        #         self.tag_posts[tag_name].append(db_post.post_id)
+
+        #     # Create post response (likes and comments counts will be updated later)
+        #     post_response = PostResponse(
+        #         post_id=db_post.post_id,
+        #         user_id=db_post.user_id,
+        #         content=db_post.content,
+        #         created_at=db_post.created_at,
+        #         updated_at=db_post.updated_at,
+        #         author=author,
+        #         tags=tag_responses,
+        #         likes_count=0,  # Will be updated in _load_likes
+        #         comments_count=0,  # Will be updated in _load_comments
+        #         is_liked=False,  # Will be set per user request
+        #         is_bookmarked=False,  # Will be set per user request
+        #     )
+        #     self.posts[db_post.post_id] = post_response
 
         for db_post in db_posts:
-            # Get author information
+            # 2. 取得したデータを使ってPostResponseオブジェクトを構築します
+            #    (ループ内での追加DBクエリは不要になります)
+
+            # 既に user 情報は db_post に含まれている
             author = self.users.get(db_post.user_id)
             if not author:
-                logger.warning(f"Author not found for post {db_post.post_id}")
+                logger.warning(
+                    f"Author with ID {db_post.user_id} not found in pre-loaded users for post {db_post.post_id}"
+                )
                 continue
 
-            # Get tags for this post
-            post_tags = (
-                db.query(models.POST_TAGS, models.TAGS)
-                .join(models.TAGS, models.POST_TAGS.tag_id == models.TAGS.tag_id)
-                .filter(models.POST_TAGS.post_id == db_post.post_id)
-                .all()
-            )
+            # タグ情報も db_post に含まれている
+            tag_responses = [
+                self.tags[pt.tag.tag_name]
+                for pt in db_post.post_tags
+                if pt.tag.tag_name in self.tags
+            ]
+            tag_names = [pt.tag.tag_name for pt in db_post.post_tags]
 
-            tag_responses = []
-            tag_names = []
-            for post_tag, tag in post_tags:
-                if tag.tag_name in self.tags:
-                    tag_responses.append(self.tags[tag.tag_name])
-                    tag_names.append(tag.tag_name)
-
-            # Store tag relationships
+            # タグの関連付けをキャッシュに保存
             self.post_tags[db_post.post_id] = tag_names
             for tag_name in tag_names:
-                self.tag_posts[tag_name].append(db_post.post_id)
+                # setdefaultでキーが存在しない場合のみ初期化
+                self.tag_posts.setdefault(tag_name, []).append(db_post.post_id)
 
-            # Create post response (likes and comments counts will be updated later)
+            # 3. 拡張したPostResponseモデルに合わせてオブジェクトを作成します
             post_response = PostResponse(
                 post_id=db_post.post_id,
                 user_id=db_post.user_id,
@@ -260,11 +319,16 @@ class CacheManager:
                 created_at=db_post.created_at,
                 updated_at=db_post.updated_at,
                 author=author,
+                # ↓↓↓ ここが今回の修正の核心部分 ↓↓↓
+                images=[PostImageResponse.from_orm(img) for img in db_post.images],
                 tags=tag_responses,
-                likes_count=0,  # Will be updated in _load_likes
-                comments_count=0,  # Will be updated in _load_comments
-                is_liked=False,  # Will be set per user request
-                is_bookmarked=False,  # Will be set per user request
+                likes_count=len(db_post.likes),
+                comments_count=len(db_post.comments),
+                bookmarks_count=len(db_post.bookmarks),
+                # is_liked と is_bookmarked はリクエストごとに動的に設定されるため、
+                # キャッシュのマスターデータとしては False のままでOK
+                is_liked=False,
+                is_bookmarked=False,
             )
             self.posts[db_post.post_id] = post_response
 
