@@ -128,48 +128,48 @@ app = FastAPI(
 )
 
 
-@app.on_event("startup")
-async def startup_event():
-    """
-    アプリケーション起動時に、正しい順序で初期化処理を実行する。
-    """
-    print("=" * 50)
-    print(">>>> TRIGGERING STARTUP EVENT IN main.py <<<<")
-    print("=" * 50)
+# @app.on_event("startup")
+# async def startup_event():
+#     """
+#     アプリケーション起動時に、正しい順序で初期化処理を実行する。
+#     """
+#     print("=" * 50)
+#     print(">>>> TRIGGERING STARTUP EVENT IN main.py <<<<")
+#     print("=" * 50)
 
-    # 1. 設定を読み込む
-    print(">>>> 1. Loading settings... <<<<")
-    settings = get_settings()
+#     # 1. 設定を読み込む
+#     print(">>>> 1. Loading settings... <<<<")
+#     settings = get_settings()
 
-    # 2. データベースを初期化する
-    print(">>>> 2. Initializing database... <<<<")
-    if not initialize_database(settings):
-        print("FATAL: Database initialization failed. Exiting.")
-        # エラーを発生させてアプリケーションを停止させる
-        raise RuntimeError("Database initialization failed.")
-    print(">>>> Database initialized SUCCESSFULLY. <<<<")
+#     # 2. データベースを初期化する
+#     print(">>>> 2. Initializing database... <<<<")
+#     if not initialize_database(settings):
+#         print("FATAL: Database initialization failed. Exiting.")
+#         # エラーを発生させてアプリケーションを停止させる
+#         raise RuntimeError("Database initialization failed.")
+#     print(">>>> Database initialized SUCCESSFULLY. <<<<")
 
-    # 3. データベースセッションを取得する
-    print(">>>> 3. Getting DB session... <<<<")
-    db = next(get_db_session())
-    print(">>>> DB session acquired. <<<<")
+#     # 3. データベースセッションを取得する
+#     print(">>>> 3. Getting DB session... <<<<")
+#     db = next(get_db_session())
+#     print(">>>> DB session acquired. <<<<")
 
-    try:
-        # 4. キャッシュを初期化する
-        print(">>>> 4. Initializing cache... <<<<")
-        # manager.pyのtry...exceptは外したままなので、ここでエラーが出れば必ず表示される
-        if not cache_manager.initialize(db):
-            print("FATAL: Cache initialization failed. Exiting.")
-            raise RuntimeError("Cache initialization failed.")
-        print(">>>> Cache initialized SUCCESSFULLY! <<<<")
+#     try:
+#         # 4. キャッシュを初期化する
+#         print(">>>> 4. Initializing cache... <<<<")
+#         # manager.pyのtry...exceptは外したままなので、ここでエラーが出れば必ず表示される
+#         if not cache_manager.initialize(db):
+#             print("FATAL: Cache initialization failed. Exiting.")
+#             raise RuntimeError("Cache initialization failed.")
+#         print(">>>> Cache initialized SUCCESSFULLY! <<<<")
 
-    finally:
-        # 5. 必ずDBセッションを閉じる
-        db.close()
-        print(">>>> 5. DATABASE SESSION CLOSED. <<<<")
-        print("=" * 50)
-        print(">>>> STARTUP COMPLETE! <<<<")
-        print("=" * 50)
+#     finally:
+#         # 5. 必ずDBセッションを閉じる
+#         db.close()
+#         print(">>>> 5. DATABASE SESSION CLOSED. <<<<")
+#         print("=" * 50)
+#         print(">>>> STARTUP COMPLETE! <<<<")
+#         print("=" * 50)
 
 
 # @app.on_event("startup")

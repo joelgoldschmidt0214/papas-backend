@@ -122,67 +122,69 @@ class CacheManager:
         Initialize cache by loading all data from database
         Returns True if successful, False otherwise
         """
-        # try:
-        start_time = datetime.now()
-        logger.info("Starting cache initialization...")
+        try:
+            start_time = datetime.now()
+            logger.info("Starting cache initialization...")
 
-        # Load all data in order of dependencies
-        self._load_users(db)
-        self._load_tags(db)
-        self._load_posts(db)
-        self._load_comments(db)
-        self._load_likes(db)
-        self._load_bookmarks(db)
-        self._load_follows(db)
-        self._load_surveys(db)
+            # Load all data in order of dependencies
+            self._load_users(db)
+            self._load_tags(db)
+            self._load_posts(db)
+            self._load_comments(db)
+            self._load_likes(db)
+            self._load_bookmarks(db)
+            self._load_follows(db)
+            self._load_surveys(db)
 
-        # Update cache statistics
-        end_time = datetime.now()
-        self.cache_stats.update(
-            {
-                "initialized": True,
-                "initialization_time": (end_time - start_time).total_seconds(),
-                "posts_count": len(self.posts),
-                "users_count": len(self.users),
-                "comments_count": sum(
-                    len(comments) for comments in self.comments.values()
-                ),
-                "tags_count": len(self.tags),
-                "surveys_count": len(self.surveys),
-                "likes_count": sum(len(user_ids) for user_ids in self.likes.values()),
-                "bookmarks_count": sum(
-                    len(post_ids) for post_ids in self.bookmarks.values()
-                ),
-                "follows_count": sum(
-                    len(following_ids) for following_ids in self.follows.values()
-                ),
-            }
-        )
+            # Update cache statistics
+            end_time = datetime.now()
+            self.cache_stats.update(
+                {
+                    "initialized": True,
+                    "initialization_time": (end_time - start_time).total_seconds(),
+                    "posts_count": len(self.posts),
+                    "users_count": len(self.users),
+                    "comments_count": sum(
+                        len(comments) for comments in self.comments.values()
+                    ),
+                    "tags_count": len(self.tags),
+                    "surveys_count": len(self.surveys),
+                    "likes_count": sum(
+                        len(user_ids) for user_ids in self.likes.values()
+                    ),
+                    "bookmarks_count": sum(
+                        len(post_ids) for post_ids in self.bookmarks.values()
+                    ),
+                    "follows_count": sum(
+                        len(following_ids) for following_ids in self.follows.values()
+                    ),
+                }
+            )
 
-        # Pre-compute sorted post list for performance
-        self._rebuild_sorted_posts_cache()
+            # Pre-compute sorted post list for performance
+            self._rebuild_sorted_posts_cache()
 
-        logger.info(
-            f"Cache initialization completed in {self.cache_stats['initialization_time']:.2f} seconds"
-        )
-        logger.info(
-            f"Loaded: {self.cache_stats['posts_count']} posts, "
-            f"{self.cache_stats['users_count']} users, "
-            f"{self.cache_stats['comments_count']} comments, "
-            f"{self.cache_stats['tags_count']} tags, "
-            f"{self.cache_stats['surveys_count']} surveys"
-        )
+            logger.info(
+                f"Cache initialization completed in {self.cache_stats['initialization_time']:.2f} seconds"
+            )
+            logger.info(
+                f"Loaded: {self.cache_stats['posts_count']} posts, "
+                f"{self.cache_stats['users_count']} users, "
+                f"{self.cache_stats['comments_count']} comments, "
+                f"{self.cache_stats['tags_count']} tags, "
+                f"{self.cache_stats['surveys_count']} surveys"
+            )
 
-        # Log memory usage for monitoring
-        memory_info = self._get_memory_usage()
-        logger.info(f"Cache memory usage: {memory_info['total_mb']:.2f} MB")
+            # Log memory usage for monitoring
+            memory_info = self._get_memory_usage()
+            logger.info(f"Cache memory usage: {memory_info['total_mb']:.2f} MB")
 
-        return True
+            return True
 
-        # except Exception as e:
-        #     logger.error(f"Cache initialization failed: {str(e)}")
-        #     self.cache_stats["initialized"] = False
-        #     return False
+        except Exception as e:
+            logger.error(f"Cache initialization failed: {str(e)}")
+            self.cache_stats["initialized"] = False
+            return False
 
     def _load_users(self, db: Session) -> None:
         """Load all users into cache"""
@@ -535,6 +537,22 @@ class CacheManager:
             ]
 
         return paginated_posts
+
+    def get_users(self, skip: int = 0, limit: int = 100) -> List[UserResponse]:
+        """
+        Get users with pagination. (Added to pass startup tests)
+        """
+        if not self.is_initialized():
+            return []
+
+        # ユーザーIDでソートされたリストを取得
+        sorted_user_ids = sorted(self.users.keys())
+
+        # ページネーションを適用
+        paginated_user_ids = sorted_user_ids[skip : skip + limit]
+
+        # ユーザーオブジェクトのリストを返す
+        return [self.users[user_id] for user_id in paginated_user_ids]
 
     def get_post_by_id(
         self, post_id: int, current_user_id: Optional[int] = None
