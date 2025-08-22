@@ -536,6 +536,23 @@ class CacheManager:
 
         return paginated_posts
 
+    def get_users(self, skip: int = 0, limit: int = 100) -> List[UserResponse]:
+        """
+        Get users with pagination, sorted by user_id.
+        (This method was missing for startup tests)
+        """
+        if not self.cache_stats["initialized"]:
+            return []
+
+        # ユーザーIDでソートされたリストを取得
+        sorted_user_ids = sorted(self.users.keys())
+
+        # ページネーションを適用
+        paginated_user_ids = sorted_user_ids[skip : skip + limit]
+
+        # ユーザーオブジェクトのリストを返す
+        return [self.users[user_id] for user_id in paginated_user_ids]
+
     def get_post_by_id(
         self, post_id: int, current_user_id: Optional[int] = None
     ) -> Optional[PostResponse]:
