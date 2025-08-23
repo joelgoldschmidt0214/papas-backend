@@ -1,7 +1,7 @@
 # --- START OF FILE create_tables_MySQL.py ---
 
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import inspect
+from sqlalchemy import inspect, text
 from passlib.context import CryptContext
 
 from connect_MySQL import engine
@@ -61,101 +61,212 @@ def insert_sample_data():
 
         print("Inserting sample data...")
 
-        # --- サンプルユーザーの作成 ---
+        # --- 1. サンプルユーザーの作成 (5名) ---
+        common_password = get_password_hash("password123")
+
         user1 = USERS(
-            username="pattyo_tokyogas",
-            display_name="パッチョ",
-            email="pattyo@example.com",
-            password_hash=get_password_hash("password123"),
-            bio="東京ガスのパッチョです！",
-            area="東京都",
-            user_type="tokyogas_member",
-            tokyo_gas_customer_id="123456789",
+            username="koto_papa",
+            display_name="江東区のパパ",
+            email="koto.papa@example.com",
+            password_hash=common_password,
+            bio="3歳と5歳の子供の父親です。週末はもっぱら公園巡り。江東区の情報を中心に交換したいです！",
+            area="東京都江東区",
         )
         user2 = USERS(
-            username="general_user",
-            display_name="一般ユーザーA",
-            email="user.a@example.com",
-            password_hash=get_password_hash("password456"),
-            bio="こんにちは。よろしくお願いします。",
-            area="神奈川県",
-            user_type="general",
+            username="minato_mama",
+            display_name="港区のママ",
+            email="minato.mama@example.com",
+            password_hash=common_password,
+            bio="港区在住、2児の母。子連れで行ける美味しいお店を探しています。",
+            area="東京都港区",
         )
-        # ソーシャルログイン用のユーザー (パスワードなし)
-        user3_google = USERS(
-            username="charlie_g",
-            display_name="Charlie Google",
-            email="charlie.g@example.com",
+        user3 = USERS(
+            username="taito_father",
+            display_name="台東区の父",
+            email="taito.father@example.com",
+            password_hash=common_password,
+            bio="下町大好き！台東区のイベント情報があれば教えてください。",
+            area="東京都台東区",
         )
-
-        session.add_all([user1, user2, user3_google])
-        session.commit()
-
-        # --- SOCIAL_LOGINS テーブルにデータを追加 ---
-        social_login_g = SOCIAL_LOGINS(
-            user_id=user3_google.user_id,
-            provider="Google",
-            provider_id="109876543210987654321",
+        user4 = USERS(
+            username="koto_mama_2",
+            display_name="こうとうママ",
+            email="koto.mama2@example.com",
+            password_hash=common_password,
+            bio="最近江東区に引っ越してきました。ご近所付き合いなど、よろしくお願いします。",
+            area="東京都江東区",
         )
-        session.add(social_login_g)
-        session.commit()
-
-        # --- サンプル投稿の作成 ---
-        post1 = POSTS(
-            user_id=user1.user_id,
-            content="今日のガス展、楽しかった！ #イベント",
-            is_event_category=True,
-            is_neighborhood_category=True,
-        )
-        post2 = POSTS(
-            user_id=user2.user_id,
-            content="新しいレシピに挑戦しました。 #グルメ",
-            is_gourmet_category=True,
-        )
-        post3 = POSTS(
-            user_id=user3_google.user_id, content="Googleログインで簡単投稿！"
-        )
-        session.add_all([post1, post2, post3])
-        session.commit()
-
-        # --- 中間テーブルや関連テーブルへのデータ挿入 ---
-        like1 = LIKES(user_id=user2.user_id, post_id=post1.post_id)
-        follow1 = FOLLOWS(follower_id=user1.user_id, following_id=user2.user_id)
-        comment1 = COMMENTS(
-            user_id=user2.user_id,
-            post_id=post1.post_id,
-            content="私も行きたかったです！",
-        )
-        bookmark1 = BOOKMARKS(user_id=user1.user_id, post_id=post2.post_id)
-
-        session.add_all(
-            [
-                like1,
-                follow1,
-                comment1,
-                bookmark1,
-            ]
+        user5 = USERS(
+            username="pattyo_official",
+            display_name="パッチョ（公式）",
+            email="pattyo.official@example.com",
+            password_hash=common_password,
+            bio="東京ガスの公式アカウントです。暮らしに役立つ情報やお得なキャンペーンをお知らせします！",
+            area="東京都",
+            user_type="tokyogas_member",
+            tokyo_gas_customer_id="987654321",
         )
 
-        session.commit()
+        session.add_all([user1, user2, user3, user4, user5])
+        session.commit()  # ユーザーIDを確定させるため、ここで一度コミット
 
-        # --- アンケートと回答のサンプルデータ作成 ---
+        # --- 2. サンプル投稿の作成 (10件) ---
+        # ▼▼▼ content内のハッシュタグを削除 ▼▼▼
+        posts_data = [
+            POSTS(
+                user_id=user1.user_id,
+                content="豊洲公園の新しい遊具、子供が大喜びでした！週末は混みそうですね。",
+                is_neighborhood_category=True,
+            ),
+            POSTS(
+                user_id=user2.user_id,
+                content="芝公園近くのイタリアン、テラス席が気持ちよくて子連れでも安心でした。ピザが絶品！",
+                is_gourmet_category=True,
+            ),
+            POSTS(
+                user_id=user4.user_id,
+                content="今週末、木場の公園で地域のフリーマーケットがあるみたいですよ！掘り出し物あるかな？",
+                is_event_category=True,
+                is_neighborhood_category=True,
+            ),
+            POSTS(
+                user_id=user3.user_id,
+                content="上野の森美術館でやっている恐竜展、迫力満点でした。夏休みの思い出にぜひ。",
+                is_event_category=True,
+            ),
+            POSTS(
+                user_id=user1.user_id,
+                content="有明ガーデンのフードコート、お店が充実していて家族みんなで楽しめますね。",
+                is_gourmet_category=True,
+            ),
+            POSTS(
+                user_id=user5.user_id,
+                content="【お知らせ】夏のガス展を開催します！最新のガス機器に触れるチャンスです。詳細はWebをチェック！",
+                is_event_category=True,
+                is_follow_category=True,
+            ),
+            POSTS(
+                user_id=user2.user_id,
+                content="麻布十番のお祭り、すごい人でした！屋台の焼きそばが美味しかった〜。",
+                is_event_category=True,
+                is_gourmet_category=True,
+            ),
+            POSTS(
+                user_id=user4.user_id,
+                content="門前仲町のパン屋さん、塩パンが最高に美味しいのでおすすめです。",
+                is_neighborhood_category=True,
+                is_gourmet_category=True,
+            ),
+            POSTS(
+                user_id=user1.user_id,
+                content="東陽町の図書館、絵本コーナーが広くて子供も飽きずに過ごせます。",
+                is_neighborhood_category=True,
+            ),
+            POSTS(
+                user_id=user5.user_id,
+                content="エアコンの温度設定を1℃見直すだけで、大きな節電に繋がります。皆でエコな夏を過ごしましょう！",
+                is_follow_category=True,
+            ),
+        ]
+        # ▲▲▲ content内のハッシュタグを削除 ▲▲▲
+        session.add_all(posts_data)
+        session.commit()  # 投稿IDを確定させるため、ここでコミット
+
+        # --- 3. アンケートの作成 (3件) ---
         survey1 = SURVEYS(
-            title="アプリの使いやすさについて",
-            question_text="このアプリの全体的なデザインや操作感について、あなたの印象に近いものを選択してください。",
-            points=50,
+            title="（仮）新設公園の遊具に関するアンケート",
+            question_text="江東区に新しく作られる公園について、どのような遊具があれば嬉しいですか？",
+            points=30,
             target_audience="all",
         )
-        session.add(survey1)
-        session.commit()
-
-        response1 = SURVEY_RESPONSES(
-            user_id=user1.user_id,
-            survey_id=survey1.survey_id,
-            choice="very_good",
-            comment="とても満足しています！",
+        survey2 = SURVEYS(
+            title="（仮）次世代エネルギー施設に関するご意見募集",
+            question_text="近隣エリアへの次世代エネルギー施設（原子力発電を含む）の建設について、あなたの考えをお聞かせください。",
+            points=100,
+            target_audience="all",
         )
-        session.add(response1)
+        survey3 = SURVEYS(
+            title="家庭での節電に関する意識調査",
+            question_text="あなたは普段、家庭での節電を意識していますか？",
+            points=20,
+            target_audience="tokyogas_member",
+        )
+        session.add_all([survey1, survey2, survey3])
+        session.commit()  # アンケートIDを確定させる
+
+        # --- 4. 関連データの作成 ---
+        # いいね、コメント、フォロー、ブックマーク、アンケート回答
+        related_data = [
+            LIKES(
+                user_id=user2.user_id, post_id=posts_data[0].post_id
+            ),  # 港区ママが江東区パパの公園投稿にいいね
+            LIKES(
+                user_id=user4.user_id, post_id=posts_data[0].post_id
+            ),  # こうとうママも公園投稿にいいね
+            LIKES(
+                user_id=user1.user_id, post_id=posts_data[1].post_id
+            ),  # 江東区パパが港区ママのグルメ投稿にいいね
+            LIKES(
+                user_id=user3.user_id, post_id=posts_data[5].post_id
+            ),  # 台東区の父が公式のお知らせにいいね
+            COMMENTS(
+                user_id=user4.user_id,
+                post_id=posts_data[0].post_id,
+                content="情報ありがとうございます！明日さっそく行ってみます！",
+            ),
+            COMMENTS(
+                user_id=user1.user_id,
+                post_id=posts_data[2].post_id,
+                content="フリマ情報助かります！",
+            ),
+            FOLLOWS(
+                follower_id=user1.user_id, following_id=user4.user_id
+            ),  # 江東区パパがこうとうママをフォロー
+            FOLLOWS(
+                follower_id=user4.user_id, following_id=user1.user_id
+            ),  # こうとうママが江東区パパをフォロー
+            FOLLOWS(
+                follower_id=user1.user_id, following_id=user5.user_id
+            ),  # みんな公式をフォロー
+            FOLLOWS(follower_id=user2.user_id, following_id=user5.user_id),
+            FOLLOWS(follower_id=user3.user_id, following_id=user5.user_id),
+            BOOKMARKS(
+                user_id=user1.user_id, post_id=posts_data[2].post_id
+            ),  # フリマ情報をブックマーク
+            BOOKMARKS(
+                user_id=user2.user_id, post_id=posts_data[7].post_id
+            ),  # パン屋さん情報をブックマーク
+            SURVEY_RESPONSES(
+                user_id=user1.user_id,
+                survey_id=survey1.survey_id,
+                choice="agree",
+                comment="アスレチック的な遊具が欲しいです。",
+            ),
+            SURVEY_RESPONSES(
+                user_id=user4.user_id,
+                survey_id=survey1.survey_id,
+                choice="agree",
+                comment="小さい子向けの安全な砂場が充実すると嬉しい。",
+            ),
+            SURVEY_RESPONSES(
+                user_id=user2.user_id,
+                survey_id=survey2.survey_id,
+                choice="disagree",
+                comment="安全性の説明が不十分だと感じます。",
+            ),
+            SURVEY_RESPONSES(
+                user_id=user3.user_id,
+                survey_id=survey2.survey_id,
+                choice="neutral",
+                comment="もっと情報が必要です。",
+            ),
+            SURVEY_RESPONSES(
+                user_id=user5.user_id,
+                survey_id=survey3.survey_id,
+                choice="very_conscious",
+            ),
+        ]
+        session.add_all(related_data)
         session.commit()
 
         print("Sample data inserted successfully!")
@@ -169,9 +280,18 @@ def insert_sample_data():
 
 if __name__ == "__main__":
     print("--- Start: Resetting database ---")
-    print("Dropping all tables...")
+
+    print("Dropping old tables (post_tags, tags) if they exist...")
+    with engine.connect() as connection:
+        with connection.begin():
+            connection.execute(text("DROP TABLE IF EXISTS post_tags"))
+            connection.execute(text("DROP TABLE IF EXISTS tags"))
+    print("Old tables dropped successfully.")
+
+    print("Dropping all tables defined in models...")
     Base.metadata.drop_all(bind=engine)
     print("All tables dropped.")
+
     init_db()
     insert_sample_data()
     print("--- Finish: Database has been reset successfully. ---")
