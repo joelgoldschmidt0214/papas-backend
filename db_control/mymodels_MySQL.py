@@ -1,3 +1,5 @@
+# --- START OF FILE mymodels_MySQL.py ---
+
 from sqlalchemy import (
     create_engine,
     Column,
@@ -135,6 +137,21 @@ class POSTS(Base):
         ForeignKey("users.user_id"), comment="投稿者ID"
     )
     content: Mapped[str] = mapped_column(Text, nullable=False, comment="投稿本文")
+
+    # カテゴリフラグ
+    is_follow_category: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False, comment="カテゴリ: フォロー (0 or 1)"
+    )
+    is_neighborhood_category: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False, comment="カテゴリ: ご近所さん (0 or 1)"
+    )
+    is_event_category: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False, comment="カテゴリ: イベント (0 or 1)"
+    )
+    is_gourmet_category: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False, comment="カテゴリ: グルメ (0 or 1)"
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), comment="作成日時"
     )
@@ -145,9 +162,6 @@ class POSTS(Base):
     user: Mapped["USERS"] = relationship("USERS", back_populates="posts")
     images: Mapped[List["POST_IMAGES"]] = relationship(
         "POST_IMAGES", back_populates="post", cascade="all, delete-orphan"
-    )
-    post_tags: Mapped[List["POST_TAGS"]] = relationship(
-        "POST_TAGS", back_populates="post", cascade="all, delete-orphan"
     )
     comments: Mapped[List["COMMENTS"]] = relationship(
         "COMMENTS", back_populates="post", cascade="all, delete-orphan"
@@ -173,33 +187,6 @@ class POST_IMAGES(Base):
     display_order: Mapped[int] = mapped_column(Integer, default=0, comment="表示順")
 
     post: Mapped["POSTS"] = relationship("POSTS", back_populates="images")
-
-
-# TAGSテーブル: タグのマスタデータを格納する
-class TAGS(Base):
-    __tablename__ = "tags"
-    tag_id: Mapped[int] = mapped_column(Integer, primary_key=True, comment="タグID")
-    tag_name: Mapped[str] = mapped_column(
-        String(255), unique=True, nullable=False, comment="タグ名"
-    )
-
-    post_tags: Mapped[List["POST_TAGS"]] = relationship(
-        "POST_TAGS", back_populates="tag"
-    )
-
-
-# POST_TAGSテーブル: 投稿とタグの関連を管理する中間テーブル
-class POST_TAGS(Base):
-    __tablename__ = "post_tags"
-    post_id: Mapped[int] = mapped_column(
-        ForeignKey("posts.post_id"), primary_key=True, comment="投稿ID"
-    )
-    tag_id: Mapped[int] = mapped_column(
-        ForeignKey("tags.tag_id"), primary_key=True, comment="タグID"
-    )
-
-    post: Mapped["POSTS"] = relationship("POSTS", back_populates="post_tags")
-    tag: Mapped["TAGS"] = relationship("TAGS", back_populates="post_tags")
 
 
 # COMMENTSテーブル: 投稿へのコメントを格納する

@@ -1,3 +1,5 @@
+# --- START OF FILE create_tables_MySQL.py ---
+
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import inspect
 from passlib.context import CryptContext
@@ -9,10 +11,8 @@ from mymodels_MySQL import (
     Base,
     USERS,
     POSTS,
-    TAGS,
     LIKES,
     FOLLOWS,
-    POST_TAGS,
     SOCIAL_LOGINS,
     POST_IMAGES,
     COMMENTS,
@@ -102,33 +102,20 @@ def insert_sample_data():
 
         # --- サンプル投稿の作成 ---
         post1 = POSTS(
-            user_id=user1.user_id, content="今日のガス展、楽しかった！ #東京ガス"
+            user_id=user1.user_id,
+            content="今日のガス展、楽しかった！ #イベント",
+            is_event_category=True,
+            is_neighborhood_category=True,
         )
-        post2 = POSTS(user_id=user2.user_id, content="新しいレシピに挑戦しました。")
+        post2 = POSTS(
+            user_id=user2.user_id,
+            content="新しいレシピに挑戦しました。 #グルメ",
+            is_gourmet_category=True,
+        )
         post3 = POSTS(
             user_id=user3_google.user_id, content="Googleログインで簡単投稿！"
         )
         session.add_all([post1, post2, post3])
-        session.commit()
-
-        # --- サンプルタグのマスタデータ作成 ---
-        tag_facility = TAGS(tag_name="#おすすめ施設情報")
-        tag_deals = TAGS(tag_name="#お得情報")
-        tag_gourmet = TAGS(tag_name="#グルメ")
-        tag_parenting = TAGS(tag_name="#子育て")
-        tag_event = TAGS(tag_name="#イベント")
-        tag_eco = TAGS(tag_name="#デコ活")
-
-        session.add_all(
-            [
-                tag_facility,
-                tag_deals,
-                tag_gourmet,
-                tag_parenting,
-                tag_event,
-                tag_eco,
-            ]
-        )
         session.commit()
 
         # --- 中間テーブルや関連テーブルへのデータ挿入 ---
@@ -141,23 +128,12 @@ def insert_sample_data():
         )
         bookmark1 = BOOKMARKS(user_id=user1.user_id, post_id=post2.post_id)
 
-        # 新しいタグをサンプル投稿に関連付け
-        # post1「今日のガス展、楽しかった！」に「#イベント」と「#おすすめ施設情報」を紐付け
-        pt_event_1 = POST_TAGS(post_id=post1.post_id, tag_id=tag_event.tag_id)
-        pt_facility_1 = POST_TAGS(post_id=post1.post_id, tag_id=tag_facility.tag_id)
-
-        # post2「新しいレシピに挑戦しました。」に「#グルメ」を紐付け
-        pt_gourmet_2 = POST_TAGS(post_id=post2.post_id, tag_id=tag_gourmet.tag_id)
-
         session.add_all(
             [
                 like1,
                 follow1,
                 comment1,
                 bookmark1,
-                pt_event_1,
-                pt_facility_1,
-                pt_gourmet_2,
             ]
         )
 

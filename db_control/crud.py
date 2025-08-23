@@ -1,8 +1,9 @@
+# --- START OF FILE crud.py ---
+
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from sqlalchemy.orm import joinedload, selectinload
-from . import mymodels_MySQL as models
 
 # as models とすることで、以降のコードで models.USERS のようにアクセスできる
 from . import mymodels_MySQL as models
@@ -118,7 +119,6 @@ def select_posts(db: Session, skip: int = 0, limit: int = 100) -> List[models.PO
             joinedload(models.POSTS.user),
             # to-manyリレーションはselectinloadが効率的
             selectinload(models.POSTS.images),
-            selectinload(models.POSTS.post_tags).joinedload(models.POST_TAGS.tag),
             selectinload(models.POSTS.likes),
             selectinload(models.POSTS.comments),
             selectinload(models.POSTS.bookmarks),
@@ -128,19 +128,6 @@ def select_posts(db: Session, skip: int = 0, limit: int = 100) -> List[models.PO
         .limit(limit)
         .all()
     )
-
-
-# def select_posts(db: Session, skip: int = 0, limit: int = 100) -> List[models.POSTS]:
-#     """
-#     投稿の一覧を作成日時の降順（新しい順）で取得します。
-#     """
-#     return (
-#         db.query(models.POSTS)
-#         .order_by(models.POSTS.created_at.desc())
-#         .offset(skip)
-#         .limit(limit)
-#         .all()
-#     )
 
 
 def select_posts_by_user_id(
@@ -163,28 +150,51 @@ def select_posts_by_tag_name(
     db: Session, tag_name: str, skip: int = 0, limit: int = 100
 ) -> List[models.POSTS]:
     """
-    特定のタグ名に関連付けられた投稿の一覧を取得します。
+    特定のカテゴリ名に関連付けられた投稿の一覧を取得します。
     """
+    query = db.query(models.POSTS)
+
+    # tag_nameに応じてフィルタリングするカラムを決定
+    if tag_name == "フォロー":
+        query = query.filter(models.POSTS.is_follow_category == True)
+    elif tag_name == "ご近所さん":
+        query = query.filter(models.POSTS.is_neighborhood_category == True)
+    elif tag_name == "イベント":
+        query = query.filter(models.POSTS.is_event_category == True)
+    elif tag_name == "グルメ":
+        query = query.filter(models.POSTS.is_gourmet_category == True)
+    else:
+        # 該当するカテゴリ名がない場合は空のリストを返す
+        return []
+
     return (
-        db.query(models.POSTS)
-        .join(models.POST_TAGS, models.POSTS.post_id == models.POST_TAGS.post_id)
-        .join(models.TAGS, models.POST_TAGS.tag_id == models.TAGS.tag_id)
-        .filter(models.TAGS.tag_name == tag_name)
-        .order_by(models.POSTS.created_at.desc())
-        .offset(skip)
-        .limit(limit)
-        .all()
+        query.order_by(models.POSTS.created_at.desc()).offset(skip).limit(limit).all()
     )
 
 
 # --- Post INSERT (Create) Operations ---
 
 
-def insert_post(db: Session, content: str, user_id: int) -> models.POSTS:
+def insert_post(
+    db: Session,
+    content: str,
+    user_id: int,
+    is_follow: bool = False,
+    is_neighborhood: bool = False,
+    is_event: bool = False,
+    is_gourmet: bool = False,
+) -> models.POSTS:
     """
-    指定されたユーザーの新しい投稿を作成します。
+    指定されたユーザーの新しい投稿を作成します。カテゴリフラグも同時に設定します。
     """
-    db_post = models.POSTS(content=content, user_id=user_id)
+    db_post = models.POSTS(
+        content=content,
+        user_id=user_id,
+        is_follow_category=is_follow,
+        is_neighborhood_category=is_neighborhood,
+        is_event_category=is_event,
+        is_gourmet_category=is_gourmet,
+    )
     db.add(db_post)
     db.commit()
     db.refresh(db_post)
@@ -368,58 +378,6 @@ def select_following(
     )
 
 
-# --- Tag & Post_Tag Operations ---
-
-
-def _select_or_insert_tag(db: Session, tag_name: str) -> models.TAGS:
-    """
-    ヘルパー関数: タグ名でタグを検索し、存在しない場合は作成します。
-    """
-    tag = db.query(models.TAGS).filter(models.TAGS.tag_name == tag_name).first()
-    if not tag:
-        tag = models.TAGS(tag_name=tag_name)
-        db.add(tag)
-        db.commit()
-        db.refresh(tag)
-    return tag
-
-
-def insert_tag_to_post(
-    db: Session, post_id: int, tag_name: str
-) -> Optional[models.POST_TAGS]:
-    """
-    タグを作成し、投稿に関連付けます。
-    """
-    tag = _select_or_insert_tag(db, tag_name)
-
-    # 既に関連が存在するかチェック
-    existing_relation = (
-        db.query(models.POST_TAGS).filter_by(post_id=post_id, tag_id=tag.tag_id).first()
-    )
-    if existing_relation:
-        return existing_relation  # 既に存在する場合は何もしない
-
-    post_tag = models.POST_TAGS(post_id=post_id, tag_id=tag.tag_id)
-    db.add(post_tag)
-    db.commit()
-    db.refresh(post_tag)
-    return post_tag
-
-
-def delete_tag_from_post(db: Session, post_id: int, tag_id: int) -> bool:
-    """
-    投稿とタグの関連付けを削除します。
-    """
-    relation = (
-        db.query(models.POST_TAGS).filter_by(post_id=post_id, tag_id=tag_id).first()
-    )
-    if relation:
-        db.delete(relation)
-        db.commit()
-        return True
-    return False
-
-
 # --- Survey Operations ---
 
 
@@ -476,6 +434,3 @@ def select_responses_by_survey_id(
         .limit(limit)
         .all()
     )
-
-
-# --- END OF FILE crud.py ---
