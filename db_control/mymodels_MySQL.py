@@ -151,6 +151,15 @@ class POSTS(Base):
     is_gourmet_category: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False, comment="カテゴリ: グルメ (0 or 1)"
     )
+    is_kosodate_category: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False, comment="カテゴリ: 子育て (0 or 1)"
+    )
+    is_otokuinfo_category: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False, comment="カテゴリ: お得情報 (0 or 1)"
+    )
+    is_decokatsu_category: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False, comment="カテゴリ: デコ活 (0 or 1)"
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), comment="作成日時"

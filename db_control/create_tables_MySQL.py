@@ -65,38 +65,40 @@ def insert_sample_data():
         common_password = get_password_hash("password123")
 
         user1 = USERS(
-            username="koto_papa",
-            display_name="江東区のパパ",
-            email="koto.papa@example.com",
+            username="keiju",
+            display_name="けいじゅ",
+            email="",
             password_hash=common_password,
-            bio="3歳と5歳の子供の父親です。週末はもっぱら公園巡り。江東区の情報を中心に交換したいです！",
-            area="東京都江東区",
+            bio="",
+            area="",
             profile_image_url="/images/user_01.png",
         )
         user2 = USERS(
-            username="minato_mama",
-            display_name="港区のママ",
-            email="minato.mama@example.com",
+            username="hasechu",
+            display_name="はせちゅー",
+            email="",
             password_hash=common_password,
-            bio="港区在住、2児の母。子連れで行ける美味しいお店を探しています。",
-            area="東京都港区",
-        )
-        user3 = USERS(
-            username="taito_father",
-            display_name="台東区の父",
-            email="taito.father@example.com",
-            password_hash=common_password,
-            bio="下町大好き！台東区のイベント情報があれば教えてください。",
-            area="東京都台東区",
+            bio="",
+            area="",
             profile_image_url="/images/user_02.png",
         )
-        user4 = USERS(
-            username="koto_mama_2",
-            display_name="こうとうママ",
-            email="koto.mama2@example.com",
+        user3 = USERS(
+            username="kenchan",
+            display_name="けんちゃん",
+            email="",
             password_hash=common_password,
-            bio="最近江東区に引っ越してきました。ご近所付き合いなど、よろしくお願いします。",
-            area="東京都江東区",
+            bio="",
+            area="",
+            profile_image_url="/images/user_03.png",
+        )
+        user4 = USERS(
+            username="eto",
+            display_name="えとー",
+            email="",
+            password_hash=common_password,
+            bio="",
+            area="",
+            profile_image_url="/images/user_04.png",
         )
         user5 = USERS(
             username="pattyo_official",
@@ -108,8 +110,42 @@ def insert_sample_data():
             user_type="tokyogas_member",
             tokyo_gas_customer_id="987654321",
         )
+        user6 = USERS(
+            username="koto_papa",
+            display_name="江東区のパパ",
+            email="koto.papa@example.com",
+            password_hash=common_password,
+            bio="3歳と5歳の子供の父親です。週末はもっぱら公園巡り。江東区の情報を中心に交換したいです！",
+            area="東京都江東区",
+            profile_image_url="",
+        )
+        user7 = USERS(
+            username="minato_mama",
+            display_name="港区のママ",
+            email="minato.mama@example.com",
+            password_hash=common_password,
+            bio="港区在住、2児の母。子連れで行ける美味しいお店を探しています。",
+            area="東京都港区",
+        )
+        user8 = USERS(
+            username="taito_father",
+            display_name="台東区の父",
+            email="taito.father@example.com",
+            password_hash=common_password,
+            bio="下町大好き！台東区のイベント情報があれば教えてください。",
+            area="東京都台東区",
+            profile_image_url="/images/user_02.png",
+        )
+        user9 = USERS(
+            username="koto_mama_2",
+            display_name="こうとうママ",
+            email="koto.mama2@example.com",
+            password_hash=common_password,
+            bio="最近江東区に引っ越してきました。ご近所付き合いなど、よろしくお願いします。",
+            area="東京都江東区",
+        )
 
-        session.add_all([user1, user2, user3, user4, user5])
+        session.add_all([user1, user2, user3, user4, user5, user6, user7, user8, user9])
         session.commit()  # ユーザーIDを確定させるため、ここで一度コミット
 
         # --- 2. サンプル投稿の作成 (10件) ---
