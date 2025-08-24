@@ -71,6 +71,7 @@ def insert_sample_data():
             password_hash=common_password,
             bio="3歳と5歳の子供の父親です。週末はもっぱら公園巡り。江東区の情報を中心に交換したいです！",
             area="東京都江東区",
+            profile_image_url="/images/user_01.png",
         )
         user2 = USERS(
             username="minato_mama",
@@ -87,6 +88,7 @@ def insert_sample_data():
             password_hash=common_password,
             bio="下町大好き！台東区のイベント情報があれば教えてください。",
             area="東京都台東区",
+            profile_image_url="/images/user_02.png",
         )
         user4 = USERS(
             username="koto_mama_2",
