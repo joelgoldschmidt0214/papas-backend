@@ -67,7 +67,7 @@ def insert_sample_data():
         user1 = USERS(
             username="keiju",
             display_name="けいじゅ",
-            email="",
+            email="user1@example.com",
             password_hash=common_password,
             bio="",
             area="",
@@ -76,7 +76,7 @@ def insert_sample_data():
         user2 = USERS(
             username="hasechu",
             display_name="はせちゅー",
-            email="",
+            email="user2@example.com",
             password_hash=common_password,
             bio="",
             area="",
@@ -85,7 +85,7 @@ def insert_sample_data():
         user3 = USERS(
             username="kenchan",
             display_name="けんちゃん",
-            email="",
+            email="user3@example.com",
             password_hash=common_password,
             bio="",
             area="",
@@ -94,7 +94,7 @@ def insert_sample_data():
         user4 = USERS(
             username="eto",
             display_name="えとー",
-            email="",
+            email="user4@example.com",
             password_hash=common_password,
             bio="",
             area="",
@@ -134,7 +134,7 @@ def insert_sample_data():
             password_hash=common_password,
             bio="下町大好き！台東区のイベント情報があれば教えてください。",
             area="東京都台東区",
-            profile_image_url="/images/user_02.png",
+            profile_image_url="",
         )
         user9 = USERS(
             username="koto_mama_2",
