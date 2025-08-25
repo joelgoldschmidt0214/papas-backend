@@ -182,6 +182,11 @@ class POSTS(Base):
         "BOOKMARKS", back_populates="post", cascade="all, delete-orphan"
     )
 
+    # --- ▼▼▼ 修正点: tagsへのリレーションを追加 ▼▼▼ ---
+    tags: Mapped[List["TAGS"]] = relationship(
+        "TAGS", secondary="post_tags", back_populates="posts"
+    )
+
 
 # POST_IMAGESテーブル: 投稿に紐づく画像を格納する
 class POST_IMAGES(Base):
@@ -356,4 +361,31 @@ class NOTIFICATIONS(Base):
     )
     actor: Mapped["USERS"] = relationship(
         "USERS", foreign_keys=[actor_user_id], back_populates="notifications_sent"
+    )
+
+
+# --- ▼▼▼ 修正点: TAGS と POST_TAGS モデルを追加 ▼▼▼ ---
+
+
+# TAGSテーブル: 投稿に付与されるタグを格納する
+class TAGS(Base):
+    __tablename__ = "tags"
+    tag_id: Mapped[int] = mapped_column(Integer, primary_key=True, comment="タグID")
+    tag_name: Mapped[str] = mapped_column(
+        String(255), unique=True, nullable=False, comment="タグ名"
+    )
+
+    posts: Mapped[List["POSTS"]] = relationship(
+        "POSTS", secondary="post_tags", back_populates="tags"
+    )
+
+
+# POST_TAGSテーブル: 投稿とタグの多対多の関係を定義する中間テーブル
+class POST_TAGS(Base):
+    __tablename__ = "post_tags"
+    post_id: Mapped[int] = mapped_column(
+        ForeignKey("posts.post_id"), primary_key=True, comment="投稿ID"
+    )
+    tag_id: Mapped[int] = mapped_column(
+        ForeignKey("tags.tag_id"), primary_key=True, comment="タグID"
     )
