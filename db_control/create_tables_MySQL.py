@@ -3,6 +3,7 @@
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import inspect, text
 from passlib.context import CryptContext
+import random
 
 from connect_MySQL import engine
 
@@ -20,6 +21,7 @@ from mymodels_MySQL import (
     NOTIFICATIONS,
     SURVEYS,
     SURVEY_RESPONSES,
+    TAGS,  # --- ▼▼▼ 修正点: TAGSをインポート ▼▼▼ ---
 )
 
 # パスワードのハッシュ化に使用するコンテキストを設定
@@ -50,6 +52,7 @@ def init_db():
 def insert_sample_data():
     """
     開発やテスト用のサンプルデータをデータベースに投入します。
+    各投稿に対して100～200件のいいねを設定します。
     """
     Session = sessionmaker(bind=engine)
     session = Session()
@@ -61,154 +64,276 @@ def insert_sample_data():
 
         print("Inserting sample data...")
 
-        # --- 1. サンプルユーザーの作成 (5名) ---
+        # --- 1. サンプルユーザーの作成 (9名) ---
         common_password = get_password_hash("password123")
 
-        user1 = USERS(
-            username="keiju",
-            display_name="けいじゅ",
-            email="user1@example.com",
-            password_hash=common_password,
-            bio="",
-            area="",
-            profile_image_url="/images/user_01.png",
-        )
-        user2 = USERS(
-            username="hasechu",
-            display_name="はせちゅー",
-            email="user2@example.com",
-            password_hash=common_password,
-            bio="",
-            area="",
-            profile_image_url="/images/user_02.png",
-        )
-        user3 = USERS(
-            username="kenchan",
-            display_name="けんちゃん",
-            email="user3@example.com",
-            password_hash=common_password,
-            bio="",
-            area="",
-            profile_image_url="/images/user_03.png",
-        )
-        user4 = USERS(
-            username="eto",
-            display_name="えとー",
-            email="user4@example.com",
-            password_hash=common_password,
-            bio="",
-            area="",
-            profile_image_url="/images/user_04.png",
-        )
-        user5 = USERS(
-            username="pattyo_official",
-            display_name="パッチョ（公式）",
-            email="pattyo.official@example.com",
-            password_hash=common_password,
-            bio="東京ガスの公式アカウントです。暮らしに役立つ情報やお得なキャンペーンをお知らせします！",
-            area="東京都",
-            user_type="tokyogas_member",
-            tokyo_gas_customer_id="987654321",
-        )
-        user6 = USERS(
-            username="koto_papa",
-            display_name="江東区のパパ",
-            email="koto.papa@example.com",
-            password_hash=common_password,
-            bio="3歳と5歳の子供の父親です。週末はもっぱら公園巡り。江東区の情報を中心に交換したいです！",
-            area="東京都江東区",
-            profile_image_url="",
-        )
-        user7 = USERS(
-            username="minato_mama",
-            display_name="港区のママ",
-            email="minato.mama@example.com",
-            password_hash=common_password,
-            bio="港区在住、2児の母。子連れで行ける美味しいお店を探しています。",
-            area="東京都港区",
-        )
-        user8 = USERS(
-            username="taito_father",
-            display_name="台東区の父",
-            email="taito.father@example.com",
-            password_hash=common_password,
-            bio="下町大好き！台東区のイベント情報があれば教えてください。",
-            area="東京都台東区",
-            profile_image_url="",
-        )
-        user9 = USERS(
-            username="koto_mama_2",
-            display_name="こうとうママ",
-            email="koto.mama2@example.com",
-            password_hash=common_password,
-            bio="最近江東区に引っ越してきました。ご近所付き合いなど、よろしくお願いします。",
-            area="東京都江東区",
-        )
+        main_users_data = [
+            {
+                "username": "keiju",
+                "display_name": "けいじゅ",
+                "email": "user1@example.com",
+                "bio": "",
+                "area": "",
+                "profile_image_url": "/images/user_01.png",
+            },
+            {
+                "username": "hasechu",
+                "display_name": "はせちゅー",
+                "email": "user2@example.com",
+                "bio": "",
+                "area": "",
+                "profile_image_url": "/images/user_02.png",
+            },
+            {
+                "username": "kenchan",
+                "display_name": "けんちゃん",
+                "email": "user3@example.com",
+                "bio": "",
+                "area": "",
+                "profile_image_url": "/images/user_03.png",
+            },
+            {
+                "username": "eto",
+                "display_name": "えとー",
+                "email": "user4@example.com",
+                "bio": "",
+                "area": "",
+                "profile_image_url": "/images/user_04.png",
+            },
+            {
+                "username": "pattyo_official",
+                "display_name": "パッチョ（公式）",
+                "email": "pattyo.official@example.com",
+                "bio": "東京ガスの公式アカウントです。暮らしに役立つ情報やお得なキャンペーンをお知らせします！",
+                "area": "東京都",
+                "user_type": "tokyogas_member",
+                "tokyo_gas_customer_id": "987654321",
+            },
+            {
+                "username": "koto_papa",
+                "display_name": "江東区のパパ",
+                "email": "koto.papa@example.com",
+                "bio": "3歳と5歳の子供の父親です。週末はもっぱら公園巡り。江東区の情報を中心に交換したいです！",
+                "area": "東京都江東区",
+                "profile_image_url": "",
+            },
+            {
+                "username": "minato_mama",
+                "display_name": "港区のママ",
+                "email": "minato.mama@example.com",
+                "bio": "港区在住、2児の母。子連れで行ける美味しいお店を探しています。",
+                "area": "東京都港区",
+            },
+            {
+                "username": "taito_father",
+                "display_name": "台東区の父",
+                "email": "taito.father@example.com",
+                "bio": "下町大好き！台東区のイベント情報があれば教えてください。",
+                "area": "東京都台東区",
+                "profile_image_url": "",
+            },
+            {
+                "username": "koto_mama_2",
+                "display_name": "こうとうママ",
+                "email": "koto.mama2@example.com",
+                "bio": "最近江東区に引っ越してきました。ご近所付き合いなど、よろしくお願いします。",
+                "area": "東京都江東区",
+            },
+        ]
 
-        session.add_all([user1, user2, user3, user4, user5, user6, user7, user8, user9])
-        session.commit()  # ユーザーIDを確定させるため、ここで一度コミット
+        main_users = []
+        for user_data in main_users_data:
+            user = USERS(
+                username=user_data["username"],
+                display_name=user_data["display_name"],
+                email=user_data["email"],
+                password_hash=common_password,
+                bio=user_data["bio"],
+                area=user_data["area"],
+                profile_image_url=user_data.get("profile_image_url", ""),
+                user_type=user_data.get("user_type", "general"),
+                tokyo_gas_customer_id=user_data.get("tokyo_gas_customer_id", None),
+            )
+            main_users.append(user)
 
-        # --- 2. サンプル投稿の作成 (10件) ---
-        # ▼▼▼ content内のハッシュタグを削除 ▼▼▼
+        session.add_all(main_users)
+        session.commit()
+
+        # --- 1.5. 大量のダミーユーザーを作成 (200名) ---
+        print("Creating 200 dummy users for likes data...")
+        dummy_users = []
+        for i in range(1, 201):
+            dummy_user = USERS(
+                username=f"dummy_user_{i:03d}",
+                display_name=f"ダミーユーザー{i}",
+                email=f"dummy{i}@example.com",
+                password_hash=common_password,
+                bio=f"テスト用ユーザー{i}です",
+                area="東京都",
+                profile_image_url=f"/images/user_{i % 4 + 1}.png",
+            )
+            dummy_users.append(dummy_user)
+
+        session.add_all(dummy_users)
+        session.commit()
+
+        all_users = session.query(USERS).all()
+        print(f"Total users created: {len(all_users)}")
+
+        # --- ▼▼▼ 修正点: サンプルタグを作成 ▼▼▼ ---
+        print("Creating sample tags...")
+        tag_names = [
+            "イベント",
+            "グルメ",
+            "子育て",
+            "お得情報",
+            "公園",
+            "カフェ",
+            "東京ガス",
+            "節約術",
+            "地域情報",
+            "DIY",
+            "お知らせ",
+        ]
+        tags_map = {name: TAGS(tag_name=name) for name in tag_names}
+        session.add_all(tags_map.values())
+        session.commit()
+        print(f"Created {len(tags_map)} tags.")
+
+        # --- 2. サンプル投稿の作成 (タグ付けあり) ---
+        main_users_from_db = (
+            session.query(USERS)
+            .filter(USERS.username.in_([user["username"] for user in main_users_data]))
+            .all()
+        )
+        user_map = {user.username: user for user in main_users_from_db}
+
         posts_data = [
+            # フォローカテゴリ
             POSTS(
-                user_id=user1.user_id,
-                content="豊洲公園の新しい遊具、子供が大喜びでした！週末は混みそうですね。",
-                is_neighborhood_category=True,
-            ),
-            POSTS(
-                user_id=user2.user_id,
-                content="芝公園近くのイタリアン、テラス席が気持ちよくて子連れでも安心でした。ピザが絶品！",
-                is_gourmet_category=True,
-            ),
-            POSTS(
-                user_id=user4.user_id,
-                content="今週末、木場の公園で地域のフリーマーケットがあるみたいですよ！掘り出し物あるかな？",
-                is_event_category=True,
-                is_neighborhood_category=True,
-            ),
-            POSTS(
-                user_id=user3.user_id,
-                content="上野の森美術館でやっている恐竜展、迫力満点でした。夏休みの思い出にぜひ。",
-                is_event_category=True,
-            ),
-            POSTS(
-                user_id=user1.user_id,
-                content="有明ガーデンのフードコート、お店が充実していて家族みんなで楽しめますね。",
-                is_gourmet_category=True,
-            ),
-            POSTS(
-                user_id=user5.user_id,
+                user_id=user_map["pattyo_official"].user_id,
                 content="【お知らせ】夏のガス展を開催します！最新のガス機器に触れるチャンスです。詳細はWebをチェック！",
                 is_event_category=True,
                 is_follow_category=True,
+                tags=[tags_map["イベント"], tags_map["東京ガス"], tags_map["お知らせ"]],
             ),
             POSTS(
-                user_id=user2.user_id,
-                content="麻布十番のお祭り、すごい人でした！屋台の焼きそばが美味しかった〜。",
+                user_id=user_map["pattyo_official"].user_id,
+                content="エアコンの温度設定を1℃見直すだけで、大きな節電に繋がります。皆でエコな夏を過ごしましょう！",
+                is_follow_category=True,
+                tags=[tags_map["節約術"], tags_map["東京ガス"]],
+            ),
+            POSTS(
+                user_id=user_map["pattyo_official"].user_id,
+                content="【節電キャンペーン】今月のガス使用量を前年比10%削減すると、ポイントが2倍になります！",
+                is_follow_category=True,
+                is_otokuinfo_category=True,
+                tags=[tags_map["お得情報"], tags_map["節約術"]],
+            ),
+            POSTS(
+                user_id=user_map["pattyo_official"].user_id,
+                content="【メンテナンス情報】来週、江東区エリアでガス管の点検作業を行います。ご不便をおかけしますが、ご協力をお願いします。",
+                is_follow_category=True,
+                tags=[tags_map["地域情報"], tags_map["お知らせ"]],
+            ),
+            # ご近所さんカテゴリ
+            POSTS(
+                user_id=user_map["keiju"].user_id,
+                content="豊洲公園の新しい遊具、子供が大喜びでした！週末は混みそうですね。",
+                is_neighborhood_category=True,
+                tags=[tags_map["公園"], tags_map["子育て"], tags_map["地域情報"]],
+            ),
+            POSTS(
+                user_id=user_map["eto"].user_id,
+                content="今週末、木場の公園で地域のフリーマーケットがあるみたいですよ！掘り出し物あるかな？",
                 is_event_category=True,
-                is_gourmet_category=True,
+                is_neighborhood_category=True,
+                tags=[tags_map["イベント"], tags_map["公園"]],
             ),
             POSTS(
-                user_id=user4.user_id,
+                user_id=user_map["eto"].user_id,
                 content="門前仲町のパン屋さん、塩パンが最高に美味しいのでおすすめです。",
                 is_neighborhood_category=True,
                 is_gourmet_category=True,
+                tags=[tags_map["グルメ"], tags_map["カフェ"]],
             ),
             POSTS(
-                user_id=user1.user_id,
+                user_id=user_map["keiju"].user_id,
                 content="東陽町の図書館、絵本コーナーが広くて子供も飽きずに過ごせます。",
                 is_neighborhood_category=True,
+                tags=[tags_map["子育て"], tags_map["地域情報"]],
             ),
             POSTS(
-                user_id=user5.user_id,
-                content="エアコンの温度設定を1℃見直すだけで、大きな節電に繋がります。皆でエコな夏を過ごしましょう！",
-                is_follow_category=True,
+                user_id=user_map["kenchan"].user_id,
+                content="江東区の地域イベント、参加してみたいのですが、どこで情報を集めていますか？",
+                is_neighborhood_category=True,
+                tags=[tags_map["イベント"], tags_map["地域情報"]],
+            ),
+            # イベントカテゴリ
+            POSTS(
+                user_id=user_map["kenchan"].user_id,
+                content="上野の森美術館でやっている恐竜展、迫力満点でした。夏休みの思い出にぜひ。",
+                is_event_category=True,
+                tags=[tags_map["イベント"], tags_map["子育て"]],
+            ),
+            POSTS(
+                user_id=user_map["hasechu"].user_id,
+                content="麻布十番のお祭り、すごい人でした！屋台の焼きそばが美味しかった〜。",
+                is_event_category=True,
+                is_gourmet_category=True,
+                tags=[tags_map["イベント"], tags_map["グルメ"]],
+            ),
+            # グルメカテゴリ
+            POSTS(
+                user_id=user_map["hasechu"].user_id,
+                content="芝公園近くのイタリアン、テラス席が気持ちよくて子連れでも安心でした。ピザが絶品！",
+                is_gourmet_category=True,
+                tags=[tags_map["グルメ"], tags_map["子育て"]],
+            ),
+            POSTS(
+                user_id=user_map["keiju"].user_id,
+                content="有明ガーデンのフードコート、お店が充実していて家族みんなで楽しめますね。",
+                is_gourmet_category=True,
+                tags=[tags_map["グルメ"], tags_map["子育て"]],
+            ),
+            # 子育てカテゴリ
+            POSTS(
+                user_id=user_map["keiju"].user_id,
+                content="江東区の子育て支援センター、スタッフの方々がとても親切で助かっています。",
+                is_neighborhood_category=True,
+                is_kosodate_category=True,
+                tags=[tags_map["子育て"], tags_map["地域情報"]],
+            ),
+            POSTS(
+                user_id=user_map["kenchan"].user_id,
+                content="子連れで行ける映画館、音響が調整されていて子供も安心して観られます。週末の過ごし方に困った時におすすめです。",
+                is_kosodate_category=True,
+                tags=[tags_map["子育て"], tags_map["イベント"]],
+            ),
+            # お得情報カテゴリ
+            POSTS(
+                user_id=user_map["eto"].user_id,
+                content="【節約術】スーパーの閉店間際、生鮮食品が半額になることが多いです。夕方の買い物がお得ですよ。",
+                is_otokuinfo_category=True,
+                tags=[tags_map["お得情報"], tags_map["節約術"]],
+            ),
+            # デコ活カテゴリ（DIY）
+            POSTS(
+                user_id=user_map["hasechu"].user_id,
+                content="【DIY】子供の部屋の壁紙、手作りで可愛くデコレーションしました！材料費も安く済んで満足です。",
+                is_decokatsu_category=True,
+                tags=[tags_map["DIY"], tags_map["子育て"]],
+            ),
+            POSTS(
+                user_id=user_map["eto"].user_id,
+                content="【DIY】ベランダのガーデニング、ハーブを育てて料理に使っています。フレッシュな香りが最高です。",
+                is_decokatsu_category=True,
+                tags=[tags_map["DIY"], tags_map["グルメ"]],
             ),
         ]
-        # ▲▲▲ content内のハッシュタグを削除 ▲▲▲
+
         session.add_all(posts_data)
-        session.commit()  # 投稿IDを確定させるため、ここでコミット
+        session.commit()
 
         # --- 3. アンケートの作成 (3件) ---
         survey1 = SURVEYS(
@@ -230,84 +355,100 @@ def insert_sample_data():
             target_audience="tokyogas_member",
         )
         session.add_all([survey1, survey2, survey3])
-        session.commit()  # アンケートIDを確定させる
+        session.commit()
 
-        # --- 4. 関連データの作成 ---
-        # いいね、コメント、フォロー、ブックマーク、アンケート回答
+        # --- 4. 大量のいいねデータを作成 ---
+        print("Creating likes data (100-200 likes per post)...")
+        likes_data = []
+        all_posts_from_db = session.query(POSTS).all()  # 投稿IDを確実に取得
+
+        for post in all_posts_from_db:
+            likes_count = random.randint(100, 200)
+            selected_users = random.sample(all_users, likes_count)
+            for user in selected_users:
+                likes_data.append(LIKES(user_id=user.user_id, post_id=post.post_id))
+
+        batch_size = 1000
+        for i in range(0, len(likes_data), batch_size):
+            batch = likes_data[i : i + batch_size]
+            session.add_all(batch)
+            session.commit()
+            print(
+                f"Added likes batch {i // batch_size + 1}/{(len(likes_data) + batch_size - 1) // batch_size}"
+            )
+
+        # --- 5. その他の関連データの作成 ---
+        post_map = {p.content: p for p in all_posts_from_db}
+
         related_data = [
-            LIKES(
-                user_id=user2.user_id, post_id=posts_data[0].post_id
-            ),  # 港区ママが江東区パパの公園投稿にいいね
-            LIKES(
-                user_id=user4.user_id, post_id=posts_data[0].post_id
-            ),  # こうとうママも公園投稿にいいね
-            LIKES(
-                user_id=user1.user_id, post_id=posts_data[1].post_id
-            ),  # 江東区パパが港区ママのグルメ投稿にいいね
-            LIKES(
-                user_id=user3.user_id, post_id=posts_data[5].post_id
-            ),  # 台東区の父が公式のお知らせにいいね
             COMMENTS(
-                user_id=user4.user_id,
-                post_id=posts_data[0].post_id,
+                user_id=user_map["eto"].user_id,
+                post_id=post_map[
+                    "【お知らせ】夏のガス展を開催します！最新のガス機器に触れるチャンスです。詳細はWebをチェック！"
+                ].post_id,
                 content="情報ありがとうございます！明日さっそく行ってみます！",
             ),
             COMMENTS(
-                user_id=user1.user_id,
-                post_id=posts_data[2].post_id,
+                user_id=user_map["keiju"].user_id,
+                post_id=post_map[
+                    "今週末、木場の公園で地域のフリーマーケットがあるみたいですよ！掘り出し物あるかな？"
+                ].post_id,
                 content="フリマ情報助かります！",
             ),
             FOLLOWS(
-                follower_id=user1.user_id, following_id=user4.user_id
-            ),  # 江東区パパがこうとうママをフォロー
+                follower_id=user_map["keiju"].user_id,
+                following_id=user_map["koto_mama_2"].user_id,
+            ),
             FOLLOWS(
-                follower_id=user4.user_id, following_id=user1.user_id
-            ),  # こうとうママが江東区パパをフォロー
+                follower_id=user_map["koto_mama_2"].user_id,
+                following_id=user_map["keiju"].user_id,
+            ),
             FOLLOWS(
-                follower_id=user1.user_id, following_id=user5.user_id
-            ),  # みんな公式をフォロー
-            FOLLOWS(follower_id=user2.user_id, following_id=user5.user_id),
-            FOLLOWS(follower_id=user3.user_id, following_id=user5.user_id),
+                follower_id=user_map["keiju"].user_id,
+                following_id=user_map["pattyo_official"].user_id,
+            ),
+            FOLLOWS(
+                follower_id=user_map["hasechu"].user_id,
+                following_id=user_map["pattyo_official"].user_id,
+            ),
             BOOKMARKS(
-                user_id=user1.user_id, post_id=posts_data[2].post_id
-            ),  # フリマ情報をブックマーク
+                user_id=user_map["keiju"].user_id,
+                post_id=post_map[
+                    "今週末、木場の公園で地域のフリーマーケットがあるみたいですよ！掘り出し物あるかな？"
+                ].post_id,
+            ),
             BOOKMARKS(
-                user_id=user2.user_id, post_id=posts_data[7].post_id
-            ),  # パン屋さん情報をブックマーク
+                user_id=user_map["hasechu"].user_id,
+                post_id=post_map[
+                    "門前仲町のパン屋さん、塩パンが最高に美味しいのでおすすめです。"
+                ].post_id,
+            ),
             SURVEY_RESPONSES(
-                user_id=user1.user_id,
+                user_id=user_map["keiju"].user_id,
                 survey_id=survey1.survey_id,
                 choice="agree",
                 comment="アスレチック的な遊具が欲しいです。",
             ),
             SURVEY_RESPONSES(
-                user_id=user4.user_id,
+                user_id=user_map["koto_mama_2"].user_id,
                 survey_id=survey1.survey_id,
                 choice="agree",
                 comment="小さい子向けの安全な砂場が充実すると嬉しい。",
             ),
             SURVEY_RESPONSES(
-                user_id=user2.user_id,
+                user_id=user_map["hasechu"].user_id,
                 survey_id=survey2.survey_id,
                 choice="disagree",
                 comment="安全性の説明が不十分だと感じます。",
-            ),
-            SURVEY_RESPONSES(
-                user_id=user3.user_id,
-                survey_id=survey2.survey_id,
-                choice="neutral",
-                comment="もっと情報が必要です。",
-            ),
-            SURVEY_RESPONSES(
-                user_id=user5.user_id,
-                survey_id=survey3.survey_id,
-                choice="very_conscious",
             ),
         ]
         session.add_all(related_data)
         session.commit()
 
         print("Sample data inserted successfully!")
+        print(f"Created {len(all_users)} users")
+        print(f"Created {len(all_posts_from_db)} posts with tags")
+        print(f"Created {len(likes_data)} likes")
 
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -318,14 +459,6 @@ def insert_sample_data():
 
 if __name__ == "__main__":
     print("--- Start: Resetting database ---")
-
-    print("Dropping old tables (post_tags, tags) if they exist...")
-    with engine.connect() as connection:
-        with connection.begin():
-            connection.execute(text("DROP TABLE IF EXISTS post_tags"))
-            connection.execute(text("DROP TABLE IF EXISTS tags"))
-    print("Old tables dropped successfully.")
-
     print("Dropping all tables defined in models...")
     Base.metadata.drop_all(bind=engine)
     print("All tables dropped.")
