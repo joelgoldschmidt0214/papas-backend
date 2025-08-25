@@ -125,7 +125,7 @@ class CacheManager:
             logger.info("Starting cache initialization...")
 
             self._load_users(db)
-            self._load_tags()  ### 変更点: DBセッションが不要に
+            self._load_tags(db)
             self._load_posts(db)
             self._load_comments(db)
             # _load_likes, _load_bookmarks は _load_posts 内でEager Loadingされるため、
@@ -180,18 +180,22 @@ class CacheManager:
             self.users[db_user.user_id] = UserResponse.from_orm(db_user)
 
     ### 変更点: DBからではなく固定リストからタグ(カテゴリ)を生成 ###
-    def _load_tags(self) -> None:
-        """Load fixed categories as tags into cache"""
-        logger.info("Loading fixed categories as tags...")
-        for i, tag_name in enumerate(FIXED_CATEGORIES):
-            self.tags[tag_name] = TagResponse(
-                tag_id=i + 1, tag_name=tag_name, posts_count=0
+    def _load_tags(self, db: Session) -> None:
+        """Load all tags and their post counts from the database into cache"""
+        logger.info("Loading tags from database...")
+        db_tags = db.query(models.TAGS).options(selectinload(models.TAGS.posts)).all()
+        for db_tag in db_tags:
+            self.tags[db_tag.tag_name] = TagResponse(
+                tag_id=db_tag.tag_id,
+                tag_name=db_tag.tag_name,
+                # 関連付けられた投稿の数をカウント
+                posts_count=len(db_tag.posts),
             )
 
     ### 変更点: postsテーブルのフラグからタグ情報を構築 ###
     def _load_posts(self, db: Session) -> None:
-        """Load all posts and build their category relationships from flags"""
-        logger.info("Loading posts...")
+        """Load all posts and their related tags from the database"""
+        logger.info("Loading posts and their tags relationship...")
 
         db_posts = (
             db.query(models.POSTS)
@@ -201,6 +205,8 @@ class CacheManager:
                 selectinload(models.POSTS.likes),
                 selectinload(models.POSTS.comments),
                 selectinload(models.POSTS.bookmarks),
+                # postsテーブルに関連するtagsをEager Loadingで一緒に読み込む
+                selectinload(models.POSTS.tags),
             )
             .order_by(models.POSTS.created_at.desc())
             .all()
@@ -214,23 +220,24 @@ class CacheManager:
                 )
                 continue
 
+            # --- フラグベースの古いロジックをリレーションシップベースに変更 ---
+            tag_responses = []
             tag_names = []
-            if db_post.is_follow_category:
-                tag_names.append("フォロー")
-            if db_post.is_neighborhood_category:
-                tag_names.append("ご近所さん")
-            if db_post.is_event_category:
-                tag_names.append("イベント")
-            if db_post.is_gourmet_category:
-                tag_names.append("グルメ")
+            # db_post.tags には関連するTAGSオブジェクトのリストが格納されている
+            for db_tag in db_post.tags:
+                # _load_tagsでキャッシュ済みのTagResponseオブジェクトを取得
+                if db_tag.tag_name in self.tags:
+                    tag_responses.append(self.tags[db_tag.tag_name])
+                    tag_names.append(db_tag.tag_name)
+                else:
+                    logger.warning(
+                        f"Tag '{db_tag.tag_name}' (post_id: {db_post.post_id}) was not pre-loaded into cache."
+                    )
 
-            tag_responses = [self.tags[name] for name in tag_names if name in self.tags]
-
+            # 投稿とタグの関連キャッシュを構築
             self.post_tags[db_post.post_id] = tag_names
             for tag_name in tag_names:
                 self.tag_posts[tag_name].append(db_post.post_id)
-                if tag_name in self.tags:
-                    self.tags[tag_name].posts_count += 1
 
             post_response = PostResponse(
                 post_id=db_post.post_id,
@@ -240,6 +247,7 @@ class CacheManager:
                 updated_at=db_post.updated_at,
                 author=author,
                 images=[PostImageResponse.from_orm(img) for img in db_post.images],
+                # 生成したtag_responsesを設定
                 tags=tag_responses,
                 likes_count=len(db_post.likes),
                 comments_count=len(db_post.comments),
