@@ -29,7 +29,7 @@ router = APIRouter(prefix="/api/v1/posts", tags=["posts"])
 )
 async def get_timeline(
     skip: int = Query(0, ge=0, description="スキップする投稿数"),
-    limit: int = Query(20, ge=1, le=100, description="取得する最大投稿数"),
+    limit: int = Query(200, ge=1, le=10000, description="取得する最大投稿数"),
     current_user: Optional[UserResponse] = Depends(get_current_user_optional),
 ):
     """
