@@ -415,36 +415,17 @@ def insert_sample_data():
                     "門前仲町に新しくできたパン屋さん、塩パンが最高に美味しいのでおすすめです。"
                 ].post_id,
             ),
+            # SURVEY_RESPONSES(
+            #     user_id=user_map["keiju"].user_id,
+            #     survey_id=surveys[1].survey_id,
+            #     choice="agree",
+            #     comment="アスレチック的な遊具が欲しいです。",
+            # ),
             SURVEY_RESPONSES(
                 user_id=user_map["keiju"].user_id,
                 survey_id=surveys[0].survey_id,
                 choice="agree",
-                comment="アスレチック的な遊具が欲しいです。",
-            ),
-            SURVEY_RESPONSES(
-                user_id=user_map["eto"].user_id,
-                survey_id=surveys[0].survey_id,
-                choice="agree",
-                comment="小さい子向けの安全な砂場が充実すると嬉しい。",
-            ),
-            SURVEY_RESPONSES(
-                user_id=user_map["hasechu"].user_id,
-                survey_id=surveys[1].survey_id,
-                choice="disagree",
-                comment="安全性の説明が不十分だと感じます。",
-            ),
-            # 匿名回答のサンプルも追加
-            SURVEY_RESPONSES(
-                user_id=None,  # 匿名回答
-                survey_id=surveys[0].survey_id,
-                choice="agree",
-                comment="遊具の種類が豊富だと嬉しいです。",
-            ),
-            SURVEY_RESPONSES(
-                user_id=None,  # 匿名回答
-                survey_id=surveys[1].survey_id,
-                choice="agree",
-                comment="環境に配慮した施設なら賛成です。",
+                comment="是非使いたいです！きっと素敵なまちになると思います！",
             ),
         ]
         session.add_all(related_data)
