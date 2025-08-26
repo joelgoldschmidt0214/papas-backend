@@ -105,7 +105,7 @@ def insert_sample_data():
                 "username": "koto_papa",
                 "display_name": "江東区のパパ",
                 "email": "koto.papa@example.com",
-                "bio": "3歳と5歳の子供の父親です。週末はもっぱら公園巡り。江東区の情報を中心に交換したいです！",
+                "bio": "3歳と6歳の子供の父親です。週末はもっぱら公園巡り。江東区の情報を中心に交換したいです！",
                 "area": "東京都江東区",
                 "profile_image_url": "/images/user_05.png",
             },
