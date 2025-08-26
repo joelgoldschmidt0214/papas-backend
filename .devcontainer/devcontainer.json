@@ -1,19 +1,16 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/docker-existing-dockerfile
 {
   "name": "FastAPI Dev Container",
   "build": {
-    // Sets the run context to one level up instead of the .devcontainer folder.
+    // ビルドコンテキストを .devcontainer ディレクトリの一つ上の階層に設定
     "context": "..",
-    // Update the 'dockerFile' property if you aren't using the standard 'Dockerfile' filename.
+    // 開発用のDockerfileを指定
     "dockerfile": "../Dockerfile.dev"
   },
+  // Dev Container Features: 追加機能をインストール
   "features": {
-    // Microsoftが提供する一般的な開発ツールをインストールする公式Feature
+    // 一般的な開発ツール (Git, Zshなど) をインストール
     "ghcr.io/devcontainers/features/common-utils:2": {
-      // Zshをインストールし、デフォルトのシェルにする
       "installZsh": true,
-      // Oh My Zsh (ターミナルをリッチにするフレームワーク) をインストール
       "installOhMyZsh": true,
       // ユーザー名をvscodeから変更しない (デフォルトのまま)
       "username": "vscode",
@@ -23,10 +20,10 @@
       "configureZshAsDefaultShell": true
     }
   },
-  // 開発を便利にするための設定
+  // VS Codeのカスタマイズ設定
   "customizations": {
     "vscode": {
-      // コンテナ内で自動的にインストールしたい拡張機能
+      // コンテナ内で有効にするVS Code拡張機能
       "extensions": [
         // --- 基本セット ---
         "ms-python.python",
@@ -46,7 +43,7 @@
         // --- データベース (オプション) ---
         "qwtel.sqlite-viewer" // SQLiteの内容表示
       ],
-      // コンテナ内でのみ有効にしたい設定
+      // コンテナ内でのみ適用するVS Code設定
       "settings": {
         "python.defaultInterpreterPath": "/usr/local/bin/python",
         // Ruffをフォーマッターとして設定し、保存時に自動フォーマット
@@ -64,21 +61,17 @@
   // コンテナ作成後に一度だけ実行されるコマンド
   // ここで依存関係をインストールする
   "postCreateCommand": "pip install -r requirements.txt",
-  // VS Codeがコンテナに接続するたびに、開発サーバーを自動で起動する
-  "postAttachCommand": "uvicorn main:app --host 0.0.0.0 --reload",
+  // VS Codeがコンテナに接続するたびに実行するコマンド
+  // アプリケーションの正規の起動スクリプトである startup.py を実行する
+  "postAttachCommand": "python startup.py",
   "remoteUser": "vscode",
-  // papas-docs をコンテナにマウントする設定
+  // ローカルフォルダをコンテナにマウントする設定
   "mounts": [
     {
       "source": "${localWorkspaceFolder}",
       "target": "${containerWorkspaceFolder}",
       "type": "bind"
     }
-    // {
-    //   "source": "${localWorkspaceFolder}/../papas-docs",
-    //   "target": "${containerWorkspaceFolder}/papas-docs",
-    //   "type": "bind"
-    // }
   ],
   // Gitのソース管理でdocsを表示させない設定
   "workspaceFolder": "/workspace"
