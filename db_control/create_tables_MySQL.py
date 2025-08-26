@@ -107,6 +107,7 @@ def insert_sample_data():
                 "email": "koto.papa@example.com",
                 "bio": "3歳と5歳の子供の父親です。週末はもっぱら公園巡り。江東区の情報を中心に交換したいです！",
                 "area": "東京都江東区",
+                "profile_image_url": "/images/user_05.png",
             },
             {
                 "username": "minato_mama",
@@ -114,6 +115,7 @@ def insert_sample_data():
                 "email": "minato.mama@example.com",
                 "bio": "港区在住、2児の母。子連れで行ける美味しいお店を探しています。",
                 "area": "東京都港区",
+                "profile_image_url": "/images/user_06.png",
             },
         ]
         main_users = []
