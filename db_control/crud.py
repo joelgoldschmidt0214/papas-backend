@@ -408,9 +408,10 @@ def insert_survey(db: Session, survey_data: dict) -> models.SURVEYS:
 def insert_survey_response(db: Session, response_data: dict) -> models.SURVEY_RESPONSES:
     """
     ユーザーのアンケート回答を登録します。
+    認証なし・重複チェックなし対応版
     """
     db_response = models.SURVEY_RESPONSES(
-        user_id=response_data["user_id"],
+        user_id=response_data.get("user_id"),  # Noneも許可
         survey_id=response_data["survey_id"],
         choice=response_data["choice"],
         comment=response_data.get("comment"),

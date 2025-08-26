@@ -311,11 +311,14 @@ class SURVEYS(Base):
 # SURVEY_RESPONSESテーブル: ユーザーのアンケート回答を記録する
 class SURVEY_RESPONSES(Base):
     __tablename__ = "survey_responses"
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.user_id"), primary_key=True, comment="回答者ID"
+    response_id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True, comment="回答ID"
+    )
+    user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.user_id"), comment="回答者ID（匿名の場合はNULL）"
     )
     survey_id: Mapped[int] = mapped_column(
-        ForeignKey("surveys.survey_id"), primary_key=True, comment="アンケートID"
+        ForeignKey("surveys.survey_id"), comment="アンケートID"
     )
     choice: Mapped[str] = mapped_column(
         String(255), comment="回答選択 (agree, disagreeなど)"
@@ -325,7 +328,7 @@ class SURVEY_RESPONSES(Base):
         DateTime, server_default=func.now(), comment="回答日時"
     )
 
-    user: Mapped["USERS"] = relationship("USERS", back_populates="survey_responses")
+    user: Mapped[Optional["USERS"]] = relationship("USERS", back_populates="survey_responses")
     survey: Mapped["SURVEYS"] = relationship("SURVEYS", back_populates="responses")
 
 

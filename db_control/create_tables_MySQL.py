@@ -433,6 +433,19 @@ def insert_sample_data():
                 choice="disagree",
                 comment="安全性の説明が不十分だと感じます。",
             ),
+            # 匿名回答のサンプルも追加
+            SURVEY_RESPONSES(
+                user_id=None,  # 匿名回答
+                survey_id=surveys[0].survey_id,
+                choice="agree",
+                comment="遊具の種類が豊富だと嬉しいです。",
+            ),
+            SURVEY_RESPONSES(
+                user_id=None,  # 匿名回答
+                survey_id=surveys[1].survey_id,
+                choice="agree",
+                comment="環境に配慮した施設なら賛成です。",
+            ),
         ]
         session.add_all(related_data)
         session.commit()

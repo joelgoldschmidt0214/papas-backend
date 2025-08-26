@@ -64,3 +64,25 @@ class UserProfileUpdateRequest(BaseModel):
         if v is not None and not v.strip():
             raise ValueError('Area cannot be empty')
         return v.strip() if v else None
+
+
+class SurveyResponseRequest(BaseModel):
+    """Survey response request model"""
+    choice: str = Field(..., pattern="^(agree|disagree)$", description="回答選択 (agree or disagree)")
+    comment: Optional[str] = Field(None, max_length=1000, description="自由記述コメント")
+
+    @field_validator('choice')
+    @classmethod
+    def validate_choice(cls, v):
+        """Validate choice"""
+        if v not in ['agree', 'disagree']:
+            raise ValueError('Choice must be either "agree" or "disagree"')
+        return v
+
+    @field_validator('comment')
+    @classmethod
+    def validate_comment(cls, v):
+        """Validate comment"""
+        if v is not None:
+            return v.strip() if v.strip() else None
+        return v
